@@ -53,12 +53,12 @@ class AuthService:
 
         return {
 
-            'access':
+            'access_token':
                 str(
                     refresh.access_token
                 ),
 
-            'refresh':
+            'refresh_token':
                 str(refresh),
         }
 

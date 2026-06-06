@@ -6,6 +6,9 @@ from .services import *
 
 from core.responses import APIResponse
 
+from rest_framework.permissions import IsAuthenticated
+
+from rest_framework_simplejwt.tokens import AccessToken
 
 class SendPhoneOTPView(
     APIView
@@ -34,52 +37,92 @@ class SendPhoneOTPView(
         )
 
 
-class VerifyPhoneOTPView(
-    APIView
-):
+# class VerifyPhoneOTPView(
+#     APIView
+# ):
+
+#     permission_classes = []
+
+#     def post(self, request):
+
+#         serializer = VerifyPhoneOTPSerializer(data=request.data)
+
+#         serializer.is_valid(
+#             raise_exception=True
+#         )
+
+#         phone = serializer.validated_data['phone']
+
+#         user, _ = User.objects.get_or_create(
+
+#             phone=phone,
+
+#             defaults={
+
+#                 'login_provider':
+#                     'phone',
+#             },
+#         )
+
+#         tokens = AuthService.generate_tokens(user)
+
+#         return APIResponse.success(
+
+#             data={
+
+#                 'user': {
+
+#                     'id':
+#                         str(user.id),
+
+#                     'phone':
+#                         user.phone,
+#                 },
+
+#                 **tokens,
+#             }
+#         )
+
+class VerifyPhoneOTPView(APIView):
 
     permission_classes = []
 
     def post(self, request):
 
-        serializer = VerifyPhoneOTPSerializer(data=request.data)
+        serializer = VerifyPhoneOTPSerializer(
+            data=request.data
+        )
 
         serializer.is_valid(
             raise_exception=True
         )
 
         phone = serializer.validated_data['phone']
+        otp = serializer.validated_data['otp']
+
+        if otp != "123456":
+            return APIResponse.error(
+                message="Invalid OTP"
+            )
 
         user, _ = User.objects.get_or_create(
-
             phone=phone,
-
             defaults={
-
-                'login_provider':
-                    'phone',
+                "login_provider": "phone",
             },
         )
 
         tokens = AuthService.generate_tokens(user)
 
         return APIResponse.success(
-
             data={
-
-                'user': {
-
-                    'id':
-                        str(user.id),
-
-                    'phone':
-                        user.phone,
+                "user": {
+                    "id": str(user.id),
+                    "phone": user.phone,
                 },
-
                 **tokens,
             }
         )
-
 
 class SocialLoginView(
     APIView
@@ -124,5 +167,34 @@ class SocialLoginView(
                 },
 
                 **tokens,
+            }
+        )
+
+
+class CompleteProfileView(APIView):
+
+    permission_classes = []
+
+    def post(self, request):
+
+        token = request.headers.get("Authorization").split(" ")[1]
+
+        payload = AccessToken(token)
+
+        user_id = payload["user_id"]
+
+        user = User.objects.get(id=user_id)
+
+        user.full_name = request.data.get("full_name", "")
+        user.email = request.data.get("email", "")
+        user.save()
+
+        return APIResponse.success(
+            message="Profile updated",
+            data={
+                "id": str(user.id),
+                "phone": user.phone,
+                "full_name": user.full_name,
+                "email": user.email,
             }
         )

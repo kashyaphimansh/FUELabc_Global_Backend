@@ -15,4 +15,8 @@ urlpatterns = [
             'apps.users.urls'
         ),
     ),
+    path(
+        'api/v1/',
+        include('apps.vehicles.urls'),
+    ),
 ]

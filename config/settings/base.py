@@ -93,6 +93,8 @@ FIREBASE_SERVICE_ACCOUNT_KEY_PATH = config(
     'FIREBASE_SERVICE_ACCOUNT_KEY_PATH'
 )
 
+AUTH_USER_MODEL = "users.User"
+
 DATABASES = {
 
     'default': {
@@ -129,12 +131,11 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=7),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
 
-    'ACCESS_TOKEN_LIFETIME':
-        timedelta(days=7),
-
-    'REFRESH_TOKEN_LIFETIME':
-        timedelta(days=30),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
 }
 
 CORS_ALLOW_ALL_ORIGINS = True

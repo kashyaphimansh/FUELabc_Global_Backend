@@ -1,15 +1,136 @@
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
 
-class AddVehicleView(
-    APIView
-):
+from .models import Vehicle
+from .serializers import VehicleSerializer
 
-    permission_classes = []
+class VehicleSetupView(APIView):
+
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        return APIResponse.success(
 
-            message='Vehicle added successfully'
+        serializer = VehicleSerializer(
+            data=request.data
         )
 
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        vehicle = serializer.save(
+            user=request.user
+        )
+
+        request.user.is_vehicle_setup_done = True
+        request.user.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Vehicle Added",
+                "data": VehicleSerializer(
+                    vehicle
+                ).data
+            },
+            status=status.HTTP_201_CREATED
+        )
+
+class VehicleListView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        vehicles = Vehicle.objects.filter(
+            user=request.user
+        ).order_by('-created_at')
+
+        serializer = VehicleSerializer(
+            vehicles,
+            many=True
+        )
+
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data
+            }
+        )
+
+class VehicleDetailView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+
+        vehicle = Vehicle.objects.get(
+            id=pk,
+            user=request.user
+        )
+
+        serializer = VehicleSerializer(
+            vehicle
+        )
+
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data
+            }
+        )
+
+class VehicleUpdateView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, pk):
+
+        vehicle = Vehicle.objects.get(
+            id=pk,
+            user=request.user
+        )
+
+        serializer = VehicleSerializer(
+            vehicle,
+            data=request.data,
+            partial=True
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        serializer.save()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Vehicle Updated",
+                "data": serializer.data
+            }
+        )
+
+class VehicleDeleteView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+
+        vehicle = Vehicle.objects.get(
+            id=pk,
+            user=request.user
+        )
+
+        vehicle.delete()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Vehicle Deleted"
+            }
+        )
 

@@ -4,6 +4,7 @@ from .views import (
     SendPhoneOTPView,
     VerifyPhoneOTPView,
     SocialLoginView,
+    CompleteProfileView
 )
 
 urlpatterns = [
@@ -21,5 +22,10 @@ urlpatterns = [
     path(
         'social-login/',
         SocialLoginView.as_view(),
+    ),
+
+    path(
+        'complete-profile/',
+        CompleteProfileView.as_view(),
     ),
 ]

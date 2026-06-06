@@ -1,69 +1,34 @@
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
 
-from core.models import BaseModel
-
-
-class User(BaseModel):
-
-    LOGIN_PROVIDER = (
-
-        ('phone', 'Phone'),
-
-        ('email', 'Email'),
-
-        ('google', 'Google'),
-
-        ('apple', 'Apple'),
-    )
+class User(AbstractBaseUser, PermissionsMixin):
 
     phone = models.CharField(
-
         max_length=20,
-
         unique=True,
-
+        null=True,
         blank=True,
-
-        default='',
     )
 
     email = models.EmailField(
-
         unique=True,
-
+        null=True,
         blank=True,
-
-        default='',
     )
 
     full_name = models.CharField(
-
         max_length=255,
-
         blank=True,
-
-        default='',
-    )
-
-    profile_image = models.TextField(
-
-        blank=True,
-
-        default='',
+        default="",
     )
 
     login_provider = models.CharField(
-
         max_length=20,
-
-        choices=LOGIN_PROVIDER,
+        default="phone",
     )
 
-    is_vehicle_setup_done = models.BooleanField(
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
 
-        default=False,
-    )
-
-    def __str__(self):
-
-        return self.full_name
+    USERNAME_FIELD = "phone"
+    REQUIRED_FIELDS = []
