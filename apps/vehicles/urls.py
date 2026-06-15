@@ -4,27 +4,27 @@ from .views import *
 urlpatterns = [
 
     path(
-        'vehicle/add/',
+        'add/',
         VehicleSetupView.as_view()
     ),
 
     path(
-        'vehicle/list/',
+        'list/',
         VehicleListView.as_view()
     ),
 
     path(
-        'vehicle/<int:pk>/',
+        '<int:pk>/',
         VehicleDetailView.as_view()
     ),
 
     path(
-        'vehicle/<int:pk>/update/',
+        'update/',
         VehicleUpdateView.as_view()
     ),
 
     path(
-        'vehicle/<int:pk>/delete/',
+        'delete/<int:pk>',
         VehicleDeleteView.as_view()
     ),
 ]

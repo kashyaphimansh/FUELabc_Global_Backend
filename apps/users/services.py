@@ -1,13 +1,8 @@
 import random
-
 from google.oauth2 import id_token
-
 from google.auth.transport import requests
-
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from .models import User
-
 
 class OTPService:
 
@@ -63,38 +58,38 @@ class AuthService:
         }
 
     @staticmethod
-    def social_login(
+    def social_login(provider, token):
 
-        provider,
+        if provider == "google":
 
-        token,
-    ):
+            user_data = id_token.verify_oauth2_token(
+                token,
+                requests.Request(),
+            )
 
-        if provider == 'google':
+            email = user_data.get("email")
+            name = user_data.get("name")
 
-            user_data = id_token.verify_oauth2_token(token, requests.Request())
-
-            email = user_data.get('email')
-
-            name = user_data.get('name')
-
-            image = user_data.get('picture')
-
-            user, _ = User.objects.get_or_create(
-
+            user, created = User.objects.get_or_create(
                 email=email,
-
                 defaults={
-
-                    'full_name':
-                        name,
-
-                    'profile_image':
-                        image,
-
-                    'login_provider':
-                        'google',
+                    "name": name or "",
+                    "login_provider": "google",
+                    "is_email_verified": True,
                 },
             )
+
+            updated = False
+
+            if not user.is_email_verified:
+                user.is_email_verified = True
+                updated = True
+
+            if not user.name and name:
+                user.name = name
+                updated = True
+
+            if updated:
+                user.save()
 
             return user

@@ -1,6 +1,5 @@
 from rest_framework import serializers
 
-
 class SendPhoneOTPSerializer(
     serializers.Serializer
 ):
@@ -13,8 +12,8 @@ class VerifyPhoneOTPSerializer(
 ):
 
     phone = serializers.CharField()
-
     otp = serializers.CharField()
+    country_code = serializers.CharField(required=False)
 
 
 class SendEmailOTPSerializer(

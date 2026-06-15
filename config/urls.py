@@ -20,9 +20,6 @@ urlpatterns = [
         include("apps.vehicles.urls"),
     ),
 
-    # =========================
-    # AEM APIs
-    # =========================
     path(
         "api/v1/aem/",
         include("apps.aem.urls"),
@@ -31,5 +28,17 @@ urlpatterns = [
     path("api/v1/tripanalytics/", 
          include("apps.tripanalytics.urls")
          ), 
+    path(
+        'api/v1/vehicle/',
+        include('apps.vehicles.urls'),
+    ),
+    path(
+        'api/v1/payments/',
+        include('apps.subscriptions.urls'),
+    ),
+    path(
+        "api/v1/app-settings/",
+        include("apps.app_settings.urls"),
+    ),
 
 ]
