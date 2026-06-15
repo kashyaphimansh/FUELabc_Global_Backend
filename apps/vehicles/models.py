@@ -13,7 +13,7 @@ class Vehicle(models.Model):
 
     make = models.CharField(max_length=100)
 
-    model = models.CharField(max_length=100)
+    model = models.CharField(max_length=100 )
 
     fuel_type = models.CharField(max_length=50)
 

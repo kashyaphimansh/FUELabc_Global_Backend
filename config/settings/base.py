@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     'apps.users',
 
     'apps.vehicles',
+
+    'apps.subscriptions'
 ]
 
 MIDDLEWARE = [
@@ -94,6 +96,10 @@ FIREBASE_SERVICE_ACCOUNT_KEY_PATH = config(
 )
 
 AUTH_USER_MODEL = "users.User"
+
+RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
+
+RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
 
 DATABASES = {
 

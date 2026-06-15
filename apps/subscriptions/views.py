@@ -1,0 +1,135 @@
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.conf import settings
+from rest_framework.permissions import IsAuthenticated
+from django.utils import timezone
+from datetime import timedelta
+import razorpay
+from .models import (
+    SubscriptionPlan,
+    UserSubscription,
+    Payment,
+)
+
+class CreateOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        plan_code = request.data.get("plan")
+
+        try:
+            plan = SubscriptionPlan.objects.get(
+                code=plan_code,
+                is_active=True,
+            )
+        except SubscriptionPlan.DoesNotExist:
+            return Response(
+                {"error": "Invalid plan"},
+                status=400,
+            )
+
+        amount_paise = int(plan.price * 100)
+
+        client = razorpay.Client(
+            auth=(
+                settings.RAZORPAY_KEY_ID,
+                settings.RAZORPAY_KEY_SECRET,
+            )
+        )
+
+        order = client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "payment_capture": 1,
+        })
+
+        subscription = UserSubscription.objects.create(
+            user=request.user,
+            plan=plan,
+            status="pending",
+        )
+
+        Payment.objects.create(
+            user=request.user,
+            subscription=subscription,
+            razorpay_order_id=order["id"],
+            amount=plan.price,
+            currency="INR",
+            status="created",
+        )
+
+        return Response({
+            "order_id": order["id"],
+            "amount": amount_paise,
+        })
+
+class VerifyPaymentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        payment_id = request.data.get(
+            "payment_id"
+        )
+
+        order_id = request.data.get(
+            "order_id"
+        )
+
+        signature = request.data.get(
+            "signature"
+        )
+
+        client = razorpay.Client(
+            auth=(
+                settings.RAZORPAY_KEY_ID,
+                settings.RAZORPAY_KEY_SECRET,
+            )
+        )
+
+        try:
+
+            client.utility.verify_payment_signature({
+                "razorpay_order_id":
+                    order_id,
+
+                "razorpay_payment_id":
+                    payment_id,
+
+                "razorpay_signature":
+                    signature,
+            })
+
+            payment = Payment.objects.get(
+                razorpay_order_id=order_id
+            )
+
+            payment.status = "paid"
+            payment.razorpay_payment_id = payment_id
+            payment.save()
+
+            subscription = payment.subscription
+
+            subscription.status = "active"
+            subscription.starts_at = timezone.now()
+
+            subscription.expires_at = (
+                timezone.now() +
+                timedelta(
+                    days=subscription.plan.duration_days
+                )
+            )
+
+            subscription.save()
+
+            return Response({
+                "success": True
+            })
+
+        except Exception as e:
+
+            return Response({
+                "success": False,
+                "error": str(e),
+            }, status=400)

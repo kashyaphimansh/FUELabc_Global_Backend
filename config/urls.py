@@ -16,7 +16,16 @@ urlpatterns = [
         ),
     ),
     path(
-        'api/v1/',
+        'api/v1/vehicle/',
         include('apps.vehicles.urls'),
     ),
+    path(
+        'api/v1/payments/',
+        include('apps.subscriptions.urls'),
+    ),
+    path(
+        "api/v1/app-settings/",
+        include("apps.app_settings.urls"),
+    ),
+
 ]
