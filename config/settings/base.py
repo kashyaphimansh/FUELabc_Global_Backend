@@ -34,8 +34,14 @@ INSTALLED_APPS = [
     'apps.users',
 
     'apps.vehicles',
+  
+    'apps.aem',
 
-    'apps.subscriptions'
+    "apps.tripanalytics",
+
+    'apps.subscriptions',
+    
+    'apps.app_settings'
 ]
 
 MIDDLEWARE = [
@@ -84,6 +90,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 ROOT_URLCONF = 'config.urls'
 
@@ -145,3 +152,4 @@ SIMPLE_JWT = {
 }
 
 CORS_ALLOW_ALL_ORIGINS = True
+
