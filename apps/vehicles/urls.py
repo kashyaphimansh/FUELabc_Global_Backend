@@ -19,12 +19,12 @@ urlpatterns = [
     ),
 
     path(
-        'update/',
+        'update/<int:pk>/',
         VehicleUpdateView.as_view()
     ),
 
     path(
-        'delete/<int:pk>',
+        'delete/<int:pk>/',
         VehicleDeleteView.as_view()
     ),
 ]
