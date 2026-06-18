@@ -44,8 +44,7 @@ urlpatterns = [
     path("api/v1/co2/",
         include("apps.co2.urls")),
 
-    path("api/mileage-advisor/",
+    path("api/v1/mileage-advisor/",
           include("apps.mileage_advisor.urls")),
-
 
 ]
