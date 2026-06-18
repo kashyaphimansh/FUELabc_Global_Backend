@@ -49,8 +49,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     subscription_plan = models.CharField(
-        max_length=20,
-        default="basic",
+    max_length=20,
+    default="basic",
     )
 
     subscription_expires_at = models.DateTimeField(
@@ -59,6 +59,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     is_premium = models.BooleanField(default=False)
+
+    trips_used = models.IntegerField(default=0)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

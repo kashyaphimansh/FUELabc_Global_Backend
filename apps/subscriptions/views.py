@@ -10,6 +10,7 @@ from .models import (
     UserSubscription,
     Payment,
 )
+from apps.app_settings.models import CountryConfig
 
 class CreateOrderView(APIView):
     permission_classes = [IsAuthenticated]
@@ -17,6 +18,7 @@ class CreateOrderView(APIView):
     def post(self, request):
 
         plan_code = request.data.get("plan")
+        print("PLAN RECEIVED =", plan_code)
 
         try:
             plan = SubscriptionPlan.objects.get(
@@ -51,10 +53,15 @@ class CreateOrderView(APIView):
                 settings.RAZORPAY_KEY_SECRET,
             )
         )
+        country_config = CountryConfig.objects.get(
+            country_code=request.user.country_code
+        )
+
+        currency = country_config.currency_code
 
         order = client.order.create({
             "amount": amount_paise,
-            "currency": "INR",
+            "currency": currency,
             "payment_capture": 1,
         })
 
@@ -160,6 +167,28 @@ class VerifyPaymentView(APIView):
             )
 
             subscription.save()
+            
+            user = request.user
+
+            user.is_premium = True
+
+            user.subscription_plan = (
+                subscription.plan.code
+            )
+
+            user.subscription_expires_at = (
+                subscription.expires_at
+            )
+            user.trips_used = 0
+
+            user.save(
+                update_fields=[
+                    "is_premium",
+                    "subscription_plan",
+                    "subscription_expires_at",
+                    "trips_used"
+                ]
+            )
 
             return Response({
                 "success": True

@@ -6,12 +6,29 @@ from rest_framework import status
 
 from .models import Vehicle
 from .serializers import VehicleSerializer
+from apps.subscriptions.services import get_user_entitlements
 
 class VehicleSetupView(APIView):
 
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+
+        limits = get_user_entitlements(request.user)
+
+        current_vehicle_count = Vehicle.objects.filter(
+            user=request.user
+        ).count()
+
+        if current_vehicle_count >= limits["vehicle_limit"]:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Vehicle limit reached",
+                    "upgrade_required": True
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         serializer = VehicleSerializer(
             data=request.data
@@ -32,13 +49,11 @@ class VehicleSetupView(APIView):
             {
                 "success": True,
                 "message": "Vehicle Added",
-                "data": VehicleSerializer(
-                    vehicle
-                ).data
+                "data": VehicleSerializer(vehicle).data
             },
             status=status.HTTP_201_CREATED
         )
-
+        
 class VehicleListView(APIView):
 
     permission_classes = [IsAuthenticated]
