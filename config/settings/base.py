@@ -41,7 +41,11 @@ INSTALLED_APPS = [
 
     'apps.subscriptions',
     
-    'apps.app_settings'
+    'apps.app_settings',
+
+    "apps.co2",
+
+    "apps.mileage_advisor", 
 ]
 
 MIDDLEWARE = [
