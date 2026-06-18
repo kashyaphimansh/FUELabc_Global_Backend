@@ -39,16 +39,6 @@ def _build_result_payload(profile: DrivingProfile) -> dict:
 
 
 class DrivingProfileView(APIView):
-    """
-    POST /api/mileage-advisor/driving-profile/
-        Saves (creates or updates) the logged-in user's fuel price,
-        preferred speed, and mileage. Returns the computed
-        speed (30-120) vs mileage vs cost table.
-
-    GET /api/mileage-advisor/driving-profile/
-        Returns the logged-in user's previously saved profile +
-        the same computed table, recalculated from stored values.
-    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
