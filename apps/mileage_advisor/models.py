@@ -25,7 +25,11 @@ class DrivingProfile(models.Model):
         related_name="driving_profile",
     )
 
-    country = models.CharField(max_length=20, choices=COUNTRY_CHOICES, default="India")
+    country = models.CharField(
+    max_length=20,
+    choices=COUNTRY_CHOICES,
+    default="USA",
+)
     state_name = models.CharField(max_length=64, blank=True, default="")
 
     fuel_type = models.CharField(max_length=20, default="petrol")
