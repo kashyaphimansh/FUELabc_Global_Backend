@@ -89,17 +89,6 @@ def _build_result_payload(profile: DrivingProfile) -> dict:
 
 
 class DrivingProfileView(APIView):
-    """
-    POST /api/mileage-advisor/driving-profile/
-
-    Saves or updates the user's driving profile and returns
-    the calculated mileage response according to country.
-
-    GET /api/mileage-advisor/driving-profile/
-
-    Returns the saved profile and formatted response.
-    """
-
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
