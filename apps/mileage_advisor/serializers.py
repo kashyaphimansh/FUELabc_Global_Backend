@@ -12,7 +12,7 @@ class DrivingProfileInputSerializer(serializers.Serializer):
 
 
 class SpeedMileageRowSerializer(serializers.Serializer):
-    speed = serializers.IntegerField()
+    speed = serializers.FloatField()
     mileage = serializers.FloatField()
     cost = serializers.FloatField()
 
@@ -22,7 +22,7 @@ class DrivingProfileResultSerializer(serializers.Serializer):
     preferred_speed = serializers.FloatField()
     mileage = serializers.FloatField()
     arai_mileage = serializers.FloatField()
-    best_speed = serializers.IntegerField()
+    best_speed = serializers.FloatField()
     cost_at_preferred_speed = serializers.FloatField()
     cost_at_best_speed = serializers.FloatField()
     savings_per_unit = serializers.FloatField()
