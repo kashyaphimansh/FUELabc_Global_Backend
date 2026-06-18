@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from datetime import datetime
 
 class Vehicle(models.Model):
 
@@ -15,6 +16,12 @@ class Vehicle(models.Model):
 
     model = models.CharField(max_length=100 )
 
+    year = models.CharField(
+        max_length=4,
+        choices=[(str(year), str(year)) for year in range(1900, datetime.now().year + 1)],
+        default=str(datetime.now().year),
+    )
+
     fuel_type = models.CharField(max_length=50)
 
     fuel_price = models.DecimalField(
@@ -29,6 +36,16 @@ class Vehicle(models.Model):
     yearly_km = models.IntegerField()
 
     driving_style = models.CharField(
+        max_length=50,
+        blank=True
+    )
+
+    state_name = models.CharField(
+        max_length=50,
+        blank=True
+    )
+
+    country_name = models.CharField(
         max_length=50,
         blank=True
     )

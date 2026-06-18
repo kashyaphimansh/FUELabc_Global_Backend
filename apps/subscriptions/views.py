@@ -29,6 +29,20 @@ class CreateOrderView(APIView):
                 status=400,
             )
 
+        active_subscription = UserSubscription.objects.filter(
+            user=request.user,
+            status="active",
+            expires_at__gt=timezone.now(),
+        ).exists()
+
+        if active_subscription:
+            return Response(
+                {
+                    "error": "You already have an active subscription"
+                },
+                status=400,
+            )
+
         amount_paise = int(plan.price * 100)
 
         client = razorpay.Client(
@@ -43,6 +57,11 @@ class CreateOrderView(APIView):
             "currency": "INR",
             "payment_capture": 1,
         })
+
+        UserSubscription.objects.filter(
+            user=request.user,
+            status="pending",
+        ).delete()
 
         subscription = UserSubscription.objects.create(
             user=request.user,
@@ -91,19 +110,38 @@ class VerifyPaymentView(APIView):
         try:
 
             client.utility.verify_payment_signature({
-                "razorpay_order_id":
-                    order_id,
-
-                "razorpay_payment_id":
-                    payment_id,
-
-                "razorpay_signature":
-                    signature,
+                "razorpay_order_id": order_id,
+                "razorpay_payment_id": payment_id,
+                "razorpay_signature": signature,
             })
 
             payment = Payment.objects.get(
-                razorpay_order_id=order_id
+                razorpay_order_id=order_id,
+                user=request.user,
             )
+
+            if payment.status == "paid":
+                return Response({
+                    "success": True,
+                    "message": "Payment already verified"
+                })
+
+            razorpay_payment = client.payment.fetch(
+                payment_id
+            )
+
+            expected_amount = int(
+                payment.amount * 100
+            )
+
+            if razorpay_payment["amount"] != expected_amount:
+                return Response(
+                    {
+                        "success": False,
+                        "error": "Amount mismatch"
+                    },
+                    status=400,
+                )
 
             payment.status = "paid"
             payment.razorpay_payment_id = payment_id
@@ -129,7 +167,10 @@ class VerifyPaymentView(APIView):
 
         except Exception as e:
 
-            return Response({
-                "success": False,
-                "error": str(e),
-            }, status=400)
+            return Response(
+                {
+                    "success": False,
+                    "error": str(e),
+                },
+                status=400,
+            )
