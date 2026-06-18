@@ -41,4 +41,11 @@ urlpatterns = [
         include("apps.app_settings.urls"),
     ),
 
+    path("api/v1/co2/",
+        include("apps.co2.urls")),
+
+    path("api/mileage-advisor/",
+          include("apps.mileage_advisor.urls")),
+
+
 ]
