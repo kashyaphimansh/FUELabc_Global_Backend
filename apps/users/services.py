@@ -3,6 +3,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
+from django.utils import timezone
 
 class OTPService:
 
@@ -93,3 +94,32 @@ class AuthService:
                 user.save()
 
             return user
+
+def sync_subscription_status(user):
+
+    if (
+        user.is_premium
+        and
+        user.subscription_expires_at
+        and
+        user.subscription_expires_at <= timezone.now()
+    ):
+
+        user.is_premium = False
+
+        user.subscription_plan = "basic"
+
+        user.subscription_expires_at = None
+
+        user.trips_used = 0
+
+        user.save(
+            update_fields=[
+                "is_premium",
+                "subscription_plan",
+                "subscription_expires_at",
+                "trips_used",
+            ]
+        )
+
+    return user
