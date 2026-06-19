@@ -25,6 +25,13 @@ from .serializers import (
 from .services.factor_calculator import calculate_factors
 from .services.efficiency_calculator import calculate_efficiency_table
 from .services.response_formatter import format_efficiency_response
+from apps.vehicles.models import Vehicle
+
+from apps.mileage_advisor.services.mileage_calculator import (
+    build_speed_mileage_table,
+)
+
+from rest_framework.permissions import IsAuthenticated
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +48,10 @@ class FactorCalculatorAPIView(APIView):
     def post(self, request):
 
         serializer = FactorRequestSerializer(data=request.data)
-
+        
         if not serializer.is_valid():
+            print("FACTOR ERRORS =", serializer.errors)
+
             return Response(
                 {
                     "status": "error",
@@ -88,13 +97,18 @@ class FactorCalculatorAPIView(APIView):
 
 class EfficiencyCalculatorAPIView(APIView):
 
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
 
-        serializer = EfficiencyRequestSerializer(data=request.data)
+        serializer = EfficiencyRequestSerializer(
+            data=request.data
+        )
 
         if not serializer.is_valid():
+            print("EFFICIENCY ERRORS =", serializer.errors)
+            print("REQUEST DATA =", request.data)
+
             return Response(
                 {
                     "status": "error",
@@ -106,17 +120,60 @@ class EfficiencyCalculatorAPIView(APIView):
             )
 
         try:
-            # 1. Raw metric calculation
+
+            vehicle = Vehicle.objects.get(
+                id=serializer.validated_data["vehicle_id"],
+                user=request.user,
+            )
+
+            table, _ = build_speed_mileage_table(
+                user_speed=vehicle.average_speed,
+                user_mileage=vehicle.average_mileage,
+                fuel_price=float(vehicle.fuel_price),
+            )
+
+            # print("TABLE =", table)
+
+            # Actual conversion after seeing table structure
+            mileage_data = {
+                row["speed"]: row["mileage"]
+                for row in table
+            }
+            # print("MILEAGE DATA =", mileage_data)
+
+            speed_range = serializer.validated_data.get("speed_range")
+
+            if speed_range:
+
+                minimum, maximum = speed_range
+
+                if minimum not in mileage_data:
+                    return Response(
+                        {
+                            "status": "error",
+                            "message": f"{minimum} not found in mileage data."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                if maximum not in mileage_data:
+                    return Response(
+                        {
+                            "status": "error",
+                            "message": f"{maximum} not found in mileage data."
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
             raw = calculate_efficiency_table(
-                mileage_data=serializer.validated_data["mileage_data"],
+                mileage_data=mileage_data,
                 distance_km=serializer.validated_data["distance_km"],
                 current_fuel_l=serializer.validated_data["current_fuel_l"],
-                fuel_price_per_l=serializer.validated_data["fuel_price_per_l"],
+                fuel_price_per_l=float(vehicle.fuel_price),
                 net_factor=serializer.validated_data.get("net_factor", 1.0),
                 speed_range=serializer.validated_data.get("speed_range"),
             )
 
-            # 2. Format into USA/Canada response
             result = format_efficiency_response(raw)
 
             return Response(
@@ -128,8 +185,20 @@ class EfficiencyCalculatorAPIView(APIView):
                 status=status.HTTP_200_OK,
             )
 
+        except Vehicle.DoesNotExist:
+
+            return Response(
+                {
+                    "status": "error",
+                    "message": "Vehicle not found.",
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
         except Exception as e:
+
             logger.exception(e)
+
             return Response(
                 {
                     "status": "error",
@@ -139,5 +208,3 @@ class EfficiencyCalculatorAPIView(APIView):
                 },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
-

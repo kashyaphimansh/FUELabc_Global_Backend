@@ -14,10 +14,12 @@ class EfficiencyRequestSerializer(serializers.Serializer):
     POST /api/v1/aem/efficiency/calculate
     """
 
-    mileage_data = serializers.DictField(
-        child=serializers.FloatField(min_value=0.1),
-        help_text="Speed (km/h) -> Mileage (km/L)"
-    )
+    # mileage_data = serializers.DictField(
+    #     child=serializers.FloatField(min_value=0.1),
+    #     help_text="Speed (km/h) -> Mileage (km/L)"
+    # )
+
+    vehicle_id = serializers.IntegerField()
 
     distance_km = serializers.FloatField(
         min_value=0.1,
@@ -29,9 +31,9 @@ class EfficiencyRequestSerializer(serializers.Serializer):
         max_value=500
     )
 
-    fuel_price_per_l = serializers.FloatField(
-        min_value=0.01
-    )
+    # fuel_price_per_l = serializers.FloatField(
+    #     min_value=0.01
+    # )
 
     net_factor = serializers.FloatField(
         default=1.0,
@@ -46,42 +48,6 @@ class EfficiencyRequestSerializer(serializers.Serializer):
         required=False
     )
 
-    # ------------------------------------------------------
-
-    def validate_mileage_data(self, value):
-
-        if not value:
-            raise serializers.ValidationError(
-                "Mileage data cannot be empty."
-            )
-
-        converted = {}
-
-        for speed, mileage in value.items():
-
-            try:
-                speed = int(speed)
-            except Exception:
-                raise serializers.ValidationError(
-                    f"Invalid speed key : {speed}"
-                )
-
-            if speed <= 0:
-                raise serializers.ValidationError(
-                    "Speed must be greater than zero."
-                )
-
-            if mileage <= 0:
-                raise serializers.ValidationError(
-                    "Mileage must be greater than zero."
-                )
-
-            converted[speed] = float(mileage)
-
-        return converted
-
-    # ------------------------------------------------------
-
     def validate_speed_range(self, value):
 
         minimum, maximum = value
@@ -95,29 +61,70 @@ class EfficiencyRequestSerializer(serializers.Serializer):
 
     # ------------------------------------------------------
 
-    def validate(self, attrs):
+    # def validate_mileage_data(self, value):
 
-        mileage = attrs.get("mileage_data")
+    #     if not value:
+    #         raise serializers.ValidationError(
+    #             "Mileage data cannot be empty."
+    #         )
 
-        speed_range = attrs.get("speed_range")
+    #     converted = {}
 
-        if speed_range:
+    #     for speed, mileage in value.items():
 
-            minimum, maximum = speed_range
+    #         try:
+    #             speed = int(speed)
+    #         except Exception:
+    #             raise serializers.ValidationError(
+    #                 f"Invalid speed key : {speed}"
+    #             )
 
-            if minimum not in mileage:
-                raise serializers.ValidationError({
-                    "speed_range":
-                    f"{minimum} not found in mileage_data."
-                })
+    #         if speed <= 0:
+    #             raise serializers.ValidationError(
+    #                 "Speed must be greater than zero."
+    #             )
 
-            if maximum not in mileage:
-                raise serializers.ValidationError({
-                    "speed_range":
-                    f"{maximum} not found in mileage_data."
-                })
+    #         if mileage <= 0:
+    #             raise serializers.ValidationError(
+    #                 "Mileage must be greater than zero."
+    #             )
 
-        return attrs
+    #         converted[speed] = float(mileage)
+
+    #     return converted
+
+    # ------------------------------------------------------
+
+    # def validate_speed_range(self, value):
+
+    #     minimum, maximum = value
+
+    #     if minimum >= maximum:
+    #         raise serializers.ValidationError(
+    #             "Minimum speed must be smaller than maximum speed."
+    #         )
+
+    #     return value
+
+    # # ------------------------------------------------------
+
+    # def validate(self, attrs):
+
+    #     speed_range = attrs.get("speed_range")
+
+    #     if speed_range:
+
+    #         minimum, maximum = speed_range
+
+    #         if minimum >= maximum:
+    #             raise serializers.ValidationError(
+    #                 {
+    #                     "speed_range":
+    #                     "Minimum speed must be smaller than maximum speed."
+    #                 }
+    #             )
+
+    #     return attrs
 
 
 # ==========================================================
