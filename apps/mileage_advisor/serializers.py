@@ -7,6 +7,7 @@ class SpeedMileageRowSerializer(serializers.Serializer):
 
 
 class DrivingProfileResultSerializer(serializers.Serializer):
+    vehicle_id = serializers.IntegerField()
     fuel_price = serializers.FloatField()
     preferred_speed = serializers.FloatField()
     mileage = serializers.FloatField()
