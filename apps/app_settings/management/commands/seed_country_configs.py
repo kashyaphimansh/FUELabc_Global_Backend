@@ -1,10 +1,12 @@
 from django.core.management.base import BaseCommand
 from apps.app_settings.models import CountryConfig
+from django.core.management import call_command
 
 COUNTRY_CONFIGS = {
 
     "US": {
         "country_name": "United States",
+        "dial_code": "+1",
         "currency_code": "USD",
         "currency_symbol": "$",
         "distance_unit": "Mile",
@@ -34,6 +36,7 @@ COUNTRY_CONFIGS = {
 
     "CA": {
         "country_name": "Canada",
+        "dial_code": "+1",
         "currency_code": "CAD",
         "currency_symbol": "C$",
         "distance_unit": "KM",
@@ -62,6 +65,7 @@ COUNTRY_CONFIGS = {
 
     "UK": {
         "country_name": "United Kingdom",
+        "dial_code": "+44",
         "currency_code": "GBP",
         "currency_symbol": "£",
         "distance_unit": "Mile",
@@ -89,6 +93,7 @@ COUNTRY_CONFIGS = {
 
     "DE": {
         "country_name": "Germany",
+        "dial_code": "+49",
         "currency_code": "EUR",
         "currency_symbol": "€",
         "distance_unit": "KM",
@@ -116,6 +121,7 @@ COUNTRY_CONFIGS = {
 
     "FR": {
         "country_name": "France",
+        "dial_code": "+33",
         "currency_code": "EUR",
         "currency_symbol": "€",
         "distance_unit": "KM",
@@ -143,6 +149,7 @@ COUNTRY_CONFIGS = {
 
     "AU": {
         "country_name": "Australia",
+        "dial_code": "+61",
         "currency_code": "AUD",
         "currency_symbol": "A$",
         "distance_unit": "KM",
@@ -171,6 +178,7 @@ COUNTRY_CONFIGS = {
 
     "NZ": {
         "country_name": "New Zealand",
+        "dial_code": "+64",
         "currency_code": "NZD",
         "currency_symbol": "NZ$",
         "distance_unit": "KM",
@@ -199,6 +207,7 @@ COUNTRY_CONFIGS = {
 
     "SG": {
         "country_name": "Singapore",
+        "dial_code": "+65",
         "currency_code": "SGD",
         "currency_symbol": "S$",
         "distance_unit": "KM",
@@ -228,6 +237,7 @@ COUNTRY_CONFIGS = {
 
     "AE": {
         "country_name": "United Arab Emirates",
+        "dial_code": "+971",
         "currency_code": "AED",
         "currency_symbol": "AED",
         "distance_unit": "KM",
@@ -256,6 +266,7 @@ COUNTRY_CONFIGS = {
 
     "SA": {
         "country_name": "Saudi Arabia",
+        "dial_code": "+966",
         "currency_code": "SAR",
         "currency_symbol": "SAR",
         "distance_unit": "KM",
@@ -284,6 +295,7 @@ COUNTRY_CONFIGS = {
 
     "BR": {
         "country_name": "Brazil",
+        "dial_code": "+55",
         "currency_code": "BRL",
         "currency_symbol": "R$",
         "distance_unit": "KM",
@@ -312,6 +324,7 @@ COUNTRY_CONFIGS = {
 
     "MX": {
         "country_name": "Mexico",
+        "dial_code": "+52",
         "currency_code": "MXN",
         "currency_symbol": "$",
         "distance_unit": "KM",
@@ -370,3 +383,4 @@ class Command(BaseCommand):
                 f"Inserted {len(configs)} countries."
             )
         )
+        call_command("seed_subscription_plans")

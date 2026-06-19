@@ -11,8 +11,9 @@ def build_user_response(user):
         "phone": user.phone or "",
         "email": user.email or "",
         "name": user.name or "",
-
         "country_code": user.country_code,
+        "dial_code": user.dial_code,
+        "login_provider": user.login_provider or "",
 
         "is_email_verified": user.is_email_verified,
         "is_phone_verified": user.is_phone_verified,

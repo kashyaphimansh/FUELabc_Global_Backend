@@ -7,6 +7,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         max_length=5,
         default="US"
     )
+    
+    dial_code = models.CharField(max_length=10, default="+1")
 
     phone = models.CharField(
         max_length=20,
@@ -30,6 +32,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     login_provider = models.CharField(
         max_length=20,
         default="phone",
+    )
+
+    current_session_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
     )
 
     is_phone_verified = models.BooleanField(
