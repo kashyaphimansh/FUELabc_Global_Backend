@@ -32,6 +32,7 @@ def build_result_payload(vehicle):
     )
 
     return {
+        "vehicle_id": vehicle.id,
         "fuel_price": float(vehicle.fuel_price),
         "preferred_speed": vehicle.average_speed,
         "mileage": vehicle.average_mileage,
