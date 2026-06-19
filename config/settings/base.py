@@ -143,7 +143,7 @@ REST_FRAMEWORK = {
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
 
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'apps.users.authentication.CustomJWTAuthentication',
     ]
 }
 
@@ -153,6 +153,8 @@ SIMPLE_JWT = {
 
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
+
+    "SIGNING_KEY": config("JWT_SIGNING_KEY"),
 }
 
 CORS_ALLOW_ALL_ORIGINS = True

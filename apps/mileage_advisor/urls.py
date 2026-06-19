@@ -1,7 +1,6 @@
 from django.urls import path
-
-from .views import DrivingProfileView
+from .views import MileageAdvisorView
 
 urlpatterns = [
-    path("driving-profile/", DrivingProfileView.as_view()),
+    path("driving-profile/<int:vehicle_id>/", MileageAdvisorView.as_view()),
 ]

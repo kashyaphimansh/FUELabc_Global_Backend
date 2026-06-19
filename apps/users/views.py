@@ -3,7 +3,7 @@ from .serializers import *
 from .services import *
 from core.responses import APIResponse
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import AccessToken
+from .helpers import build_user_response
 
 class SendPhoneOTPView(
     APIView
@@ -58,60 +58,50 @@ class VerifyPhoneOTPView(APIView):
             "US"
         )
 
-        user, created = User.objects.get_or_create(
-            phone=phone,
-            defaults={
-                "login_provider": "phone",
-                "country_code": country_code,
-            },
+        dial_code = serializer.validated_data.get(
+            "dial_code",
+            "+1"
         )
 
-        if not created and not user.country_code:
-            user.country_code = country_code
-            user.save(update_fields=["country_code"])
+        user = User.objects.filter(
+            phone=phone
+        ).first()
 
-        if not user.is_phone_verified:
-            user.is_phone_verified = True
-            user.save(update_fields=["is_phone_verified"])
+        updated_fields = []
 
+        if not user:
+
+            user = User.objects.create(
+                phone=phone,
+                login_provider="phone",
+                country_code=country_code,
+                dial_code=dial_code,
+                is_phone_verified=True,
+            )
+
+        else:
+
+            if not user.country_code:
+                user.country_code = country_code
+                updated_fields.append("country_code")
+
+            if not user.dial_code:
+                user.dial_code = dial_code
+                updated_fields.append("dial_code")
+
+            if not user.is_phone_verified:
+                user.is_phone_verified = True
+                updated_fields.append("is_phone_verified")
+
+            if updated_fields:
+                user.save(update_fields=updated_fields)
+
+        user = sync_subscription_status(user)
         tokens = AuthService.generate_tokens(user)
-
+        
         return APIResponse.success(
             data={
-                "user": {
-                    "id": str(user.id),
-                    "phone": user.phone,
-                    "country_code": user.country_code,
-                    "name": getattr(user, "name", "") or "",
-                    "email": getattr(user, "email", "") or "",
-                    "is_email_verified": getattr(
-                        user,
-                        "is_email_verified",
-                        False,
-                    ),
-                    "is_phone_verified": getattr(
-                        user,
-                        "is_phone_verified",
-                        False,
-                    ),
-                    "profile_completed": bool(
-                        (user.name or "").strip()
-                        and
-                        (user.email or "").strip()
-                    ),
-
-                    "is_vehicle_setup_done": user.is_vehicle_setup_done,
-                    "subscription_plan": user.subscription_plan,
-                    "subscription_expires_at": user.subscription_expires_at,
-                    "is_premium":
-                        (
-                            user.subscription_plan != "basic"
-                            and
-                            user.subscription_expires_at
-                            and
-                            user.subscription_expires_at > timezone.now()
-                        ),
-                },
+                "user": build_user_response(user),
 
                 **tokens,
             }
@@ -153,7 +143,7 @@ class VerifyEmailOTPView(APIView):
             raise_exception=True
         )
 
-        email = serializer.validated_data["email"]
+        email = serializer.validated_data["email"].lower().strip()
         otp = serializer.validated_data["otp"]
 
         if otp != "123456":
@@ -161,57 +151,27 @@ class VerifyEmailOTPView(APIView):
                 message="Invalid OTP"
             )
 
-        user, _ = User.objects.get_or_create(
-            email=email,
-            defaults={
-                "login_provider": "email",
-            },
-        )
+        user = User.objects.filter(
+            email=email
+        ).first()
 
-        if not user.is_email_verified:
-            user.is_email_verified = True
-            user.save(update_fields=["is_email_verified"])
+        if not user:
+            user = User.objects.create(
+                email=email,
+                login_provider="email",
+                is_email_verified=True,
+            )
+        else:
+            if not user.is_email_verified:
+                user.is_email_verified = True
+                user.save(update_fields=["is_email_verified"])
 
+        user = sync_subscription_status(user)
         tokens = AuthService.generate_tokens(user)
 
         return APIResponse.success(
             data={
-                "user": {
-                    "id": str(user.id),
-                    "phone": user.phone or "",
-                    "name": user.name or "",
-                    "email": user.email or "",
-                    "country_code": user.country_code,
-                    "profile_completed": bool(
-                        (user.name or "").strip()
-                        and
-                        (user.email or "").strip()
-                    ),
-                    "is_email_verified": getattr(
-                        user,
-                        "is_email_verified",
-                        False,
-                    ),
-                    "is_phone_verified": getattr(
-                        user,
-                        "is_phone_verified",
-                        False,
-                    ),
-                    "is_vehicle_setup_done":
-                        user.is_vehicle_setup_done,
-                    "subscription_plan":
-                        user.subscription_plan,
-                    "subscription_expires_at":
-                        user.subscription_expires_at,
-                    "is_premium":
-                        (
-                            user.subscription_plan != "basic"
-                            and
-                            user.subscription_expires_at
-                            and
-                            user.subscription_expires_at > timezone.now()
-                        ),
-                },
+                "user": build_user_response(user),
 
                 **tokens,
             }
@@ -232,62 +192,22 @@ class SocialLoginView(
         )
 
         user = AuthService.social_login(
-            serializer.validated_data[
-                'provider'
-            ],
-
-            serializer.validated_data[
-                'id_token'
-            ],
+            serializer.validated_data['provider'],
+            serializer.validated_data['id_token'],
         )
+
+        user = sync_subscription_status(user)
 
         tokens = AuthService.generate_tokens(user)
 
         return APIResponse.success(
-
             data={
-
-                "user": {
-                    "id": str(user.id),
-                    "phone": user.phone or "",
-                    "name": user.name or "",
-                    "email": user.email or "",
-                    "country_code": user.country_code,
-                    "profile_completed": bool(
-                        (user.name or "").strip()
-                        and
-                        (user.email or "").strip()
-                    ),
-                    "is_email_verified": getattr(
-                        user,
-                        "is_email_verified",
-                        False,
-                    ),
-                    "is_phone_verified": getattr(
-                        user,
-                        "is_phone_verified",
-                        False,
-                    ),
-                    "subscription_plan":
-                        user.subscription_plan,
-                    "subscription_expires_at":
-                        user.subscription_expires_at,
-                    "is_premium":
-                        (
-                            user.subscription_plan != "basic"
-                            and
-                            user.subscription_expires_at
-                            and
-                            user.subscription_expires_at > timezone.now()
-                        ),
-                    "is_vehicle_setup_done": user.is_vehicle_setup_done,
-                },
+                "user": build_user_response(user),
                 **tokens,
             }
         )
 
-
-class CompleteProfileView(APIView):
+class SendPhoneVerificationView(APIView):
 
     permission_classes = [IsAuthenticated]
 
@@ -295,14 +215,187 @@ class CompleteProfileView(APIView):
 
         user = request.user
 
-        user.name = request.data.get(
-                "name",
-                ""
+        if not user.phone:
+            return APIResponse.error(
+                message="Phone number not found"
+            )
+
+        OTPService.send_phone_otp(user.phone)
+
+        return APIResponse.success(
+            message="OTP sent for phone verification"
         )
 
-        user.email = request.data.get(
-                "email",
-                ""
+class VerifyPhoneVerificationView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        otp = request.data.get("otp")
+
+        if otp != "123456":
+            return APIResponse.error(
+                message="Invalid OTP"
+            )
+
+        user = request.user
+
+        user.is_phone_verified = True
+
+        user.save(
+            update_fields=[
+                "is_phone_verified",
+            ]
+        )
+
+        return APIResponse.success(
+            message="Phone verified",
+            data={
+                "user": build_user_response(user)
+            }
+        )
+
+class SendEmailVerificationView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        user = request.user
+
+        if not user.email:
+            return APIResponse.error(
+                message="Email not found"
+            )
+
+        OTPService.send_email_otp(user.email)
+
+        return APIResponse.success(
+            message="OTP sent for email verification"
+        )
+
+class VerifyEmailVerificationView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        otp = request.data.get("otp")
+
+        if otp != "123456":
+            return APIResponse.error(
+                message="Invalid OTP"
+            )
+
+        user = request.user
+
+        user.is_email_verified = True
+
+        user.save(
+            update_fields=[
+                "is_email_verified",
+            ]
+        )
+
+        return APIResponse.success(
+            message="Email verified",
+            data={
+                "user": build_user_response(user)
+            }
+        )
+
+class CompleteProfileView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        user = sync_subscription_status(request.user)
+
+        name = request.data.get(
+            "name",
+            ""
+        ).strip()
+
+        email = request.data.get(
+            "email",
+            ""
+        ).lower().strip()
+
+        phone = request.data.get(
+            "phone",
+            ""
+        ).strip()
+
+        # Required validations
+
+        if not name:
+            return APIResponse.error(
+                message="Name is required"
+            )
+
+        if user.login_provider == "phone":
+
+            if not email and not user.email:
+                return APIResponse.error(
+                    message="Email is required"
+                )
+
+        if user.login_provider == "email":
+
+            if not phone and not user.phone:
+                return APIResponse.error(
+                    message="Phone number is required"
+                )
+
+        # Duplicate email check
+        if email:
+
+            existing_email = User.objects.filter(
+                email=email
+            ).exclude(
+                id=user.id
+            ).exists()
+
+            if existing_email:
+                return APIResponse.error(
+                    message="Email already linked with another account"
+                )
+
+        # Duplicate phone check
+
+        if phone:
+
+            existing_phone = User.objects.filter(
+                phone=phone
+            ).exclude(
+                id=user.id
+            ).exists()
+
+            if existing_phone:
+                return APIResponse.error(
+                    message="Phone already linked with another account"
+                )
+
+        # Update user
+
+        user.name = name
+
+        # Email can be set only once
+        if not user.email and email:
+            user.email = email
+
+        # Phone can be set only once
+        if not user.phone and phone:
+            user.phone = phone
+
+        # Profile completion
+
+        user.profile_completed = bool(
+            user.name and
+            user.email and
+            user.phone
         )
 
         user.save()
@@ -310,31 +403,30 @@ class CompleteProfileView(APIView):
         return APIResponse.success(
             message="Profile updated",
             data={
-                "user": {
-                    "id": str(user.id),
-                    "phone": user.phone,
-                    "name": user.name,
-                    "email": user.email,
-                    "country_code": user.country_code,
-                    "profile_completed": True,
-                    "is_email_verified": user.is_email_verified,
-                    "is_phone_verified": user.is_phone_verified,
-                    "is_vehicle_setup_done":
-                        user.is_vehicle_setup_done,
-                    "subscription_plan":
-                        user.subscription_plan,
-                    "subscription_expires_at":
-                        user.subscription_expires_at,
-                    "is_premium":
-                        (
-                            user.subscription_plan != "basic"
-                            and
-                            user.subscription_expires_at
-                            and
-                            user.subscription_expires_at > timezone.now()
-                        ),
-                }
+                "user": build_user_response(user),
             }
+        )
+
+class LogoutView(APIView):
+
+    permission_classes = [
+        IsAuthenticated
+    ]
+
+    def post(self, request):
+
+        user = request.user
+
+        user.current_session_id = None
+
+        user.save(
+            update_fields=[
+                "current_session_id"
+            ]
+        )
+
+        return APIResponse.success(
+            message="Logged out"
         )
 
 class DeleteAccountView(APIView):

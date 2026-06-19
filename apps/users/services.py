@@ -3,6 +3,8 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
+from django.utils import timezone
+import uuid
 
 class OTPService:
 
@@ -44,16 +46,27 @@ class AuthService:
     @staticmethod
     def generate_tokens(user):
 
+        session_id = str(
+            uuid.uuid4()
+        )
+
+        user.current_session_id = session_id
+
+        user.save(
+            update_fields=[
+                "current_session_id"
+            ]
+        )
+
         refresh = RefreshToken.for_user(user)
 
+        refresh["session_id"] = session_id
+
         return {
+            "access_token":
+                str(refresh.access_token),
 
-            'access_token':
-                str(
-                    refresh.access_token
-                ),
-
-            'refresh_token':
+            "refresh_token":
                 str(refresh),
         }
 
@@ -70,26 +83,61 @@ class AuthService:
             email = user_data.get("email")
             name = user_data.get("name")
 
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    "name": name or "",
-                    "login_provider": "google",
-                    "is_email_verified": True,
-                },
-            )
+            user = User.objects.filter(
+                email=email
+            ).first()
 
-            updated = False
+            if not user:
 
-            if not user.is_email_verified:
-                user.is_email_verified = True
-                updated = True
+                user = User.objects.create(
+                    email=email,
+                    name=name or "",
+                    login_provider="google",
+                    is_email_verified=True,
+                )
 
-            if not user.name and name:
-                user.name = name
-                updated = True
+            else:
 
-            if updated:
-                user.save()
+                updated = False
+
+                if not user.is_email_verified:
+                    user.is_email_verified = True
+                    updated = True
+
+                if not user.name and name:
+                    user.name = name
+                    updated = True
+
+                if updated:
+                    user.save()
 
             return user
+
+def sync_subscription_status(user):
+
+    if (
+        user.is_premium
+        and
+        user.subscription_expires_at
+        and
+        user.subscription_expires_at <= timezone.now()
+    ):
+
+        user.is_premium = False
+
+        user.subscription_plan = "basic"
+
+        user.subscription_expires_at = None
+
+        user.trips_used = 0
+
+        user.save(
+            update_fields=[
+                "is_premium",
+                "subscription_plan",
+                "subscription_expires_at",
+                "trips_used",
+            ]
+        )
+
+    return user

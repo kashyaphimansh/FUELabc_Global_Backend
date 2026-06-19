@@ -9,6 +9,11 @@ from .views import (
     DeleteAccountView,
     SendEmailOTPView,
     VerifyEmailOTPView,
+    SendPhoneVerificationView,
+    VerifyPhoneVerificationView,
+    SendEmailVerificationView,
+    VerifyEmailVerificationView,
+    LogoutView
 )
 
 urlpatterns = [
@@ -39,8 +44,33 @@ urlpatterns = [
     ),
 
     path(
+        'send-phone-verification/',
+        SendPhoneVerificationView.as_view(),
+    ),
+
+    path(
+        'verify-phone-verification/',
+        VerifyPhoneVerificationView.as_view(),
+    ),
+
+    path(
+        'send-email-verification/',
+        SendEmailVerificationView.as_view(),
+    ),
+
+    path(
+        'verify-email-verification/',
+        VerifyEmailVerificationView.as_view(),
+    ),
+
+    path(
         'complete-profile/',
         CompleteProfileView.as_view(),
+    ),
+
+    path(
+        'logout/',
+        LogoutView.as_view(),
     ),
 
     path(
