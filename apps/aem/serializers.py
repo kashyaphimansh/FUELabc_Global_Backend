@@ -138,7 +138,7 @@ class FactorRequestSerializer(serializers.Serializer):
 
     passenger_count = serializers.IntegerField(
         min_value=1,
-        max_value=5,
+        max_value=15,
         default=1
     )
 
@@ -150,7 +150,7 @@ class FactorRequestSerializer(serializers.Serializer):
 
     odometer_km = serializers.IntegerField(
         min_value=0,
-        max_value=500000,
+        max_value=1000000,
         default=0
     )
 
