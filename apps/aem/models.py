@@ -64,7 +64,7 @@ class PassengerFactor(BaseFactorModel):
         unique=True,
         validators=[
             MinValueValidator(1),
-            MaxValueValidator(5)
+            MaxValueValidator(15)
         ]
     )
 
