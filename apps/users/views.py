@@ -328,27 +328,6 @@ class CompleteProfileView(APIView):
             ""
         ).strip()
 
-        # Required validations
-
-        if not name:
-            return APIResponse.error(
-                message="Name is required"
-            )
-
-        if user.login_provider == "phone":
-
-            if not email and not user.email:
-                return APIResponse.error(
-                    message="Email is required"
-                )
-
-        if user.login_provider == "email":
-
-            if not phone and not user.phone:
-                return APIResponse.error(
-                    message="Phone number is required"
-                )
-
         # Duplicate email check
         if email:
 
