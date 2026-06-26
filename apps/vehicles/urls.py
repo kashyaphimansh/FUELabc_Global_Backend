@@ -27,4 +27,8 @@ urlpatterns = [
         'delete/<int:pk>/',
         VehicleDeleteView.as_view()
     ),
+
+    path('vehicle-makes/', VehicleMakesView.as_view()),
+
+    path('vehicle-models/', VehicleModelsView.as_view()),
 ]
