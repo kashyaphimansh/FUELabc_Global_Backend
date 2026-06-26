@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
-from .models import Vehicle
+from .models import Vehicle, VehicleCatalog
 from .serializers import VehicleSerializer
 from apps.subscriptions.services import get_user_entitlements
 
@@ -36,6 +36,17 @@ class VehicleSetupView(APIView):
 
         serializer.is_valid(
             raise_exception=True
+        )
+        make = serializer.validated_data["make"]
+        model = serializer.validated_data["model"]
+
+        VehicleCatalog.objects.get_or_create(
+            make=make,
+            model=model,
+            defaults={
+                "created_by": request.user,
+                "created_by_admin": False,
+            }
         )
 
         vehicle = serializer.save(
@@ -149,3 +160,41 @@ class VehicleDeleteView(APIView):
             }
         )
 
+class VehicleMakesView(APIView):
+
+    def get(self, request):
+
+        makes = VehicleCatalog.objects.filter(
+            is_active=True
+        ).values_list(
+            "make",
+            flat=True
+        ).distinct().order_by("make")
+
+        return Response(
+            {
+                "success": True,
+                "data": list(makes)
+            }
+        )
+
+class VehicleModelsView(APIView):
+
+    def get(self, request):
+
+        make = request.query_params.get("make")
+
+        models = VehicleCatalog.objects.filter(
+            make=make,
+            is_active=True
+        ).values_list(
+            "model",
+            flat=True
+        ).distinct().order_by("model")
+
+        return Response(
+            {
+                "success": True,
+                "data": list(models)
+            }
+        )
