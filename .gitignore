@@ -1,5 +1,11 @@
-service-account-key.json
 .env
+*.env
+.env.*
+!.env.example
+service-account-key.json
+firebase-service-account.json
+*service-account*.json
+.DS_Store
 __pycache__/
 *.pyc
 .venv_new
