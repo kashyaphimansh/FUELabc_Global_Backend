@@ -12,11 +12,13 @@ COUNTRY_CONFIGS = {
         "distance_unit": "Mile",
         "fuel_volume_unit": "Gallon",
         "fuel_economy_unit": "MPG",
+        "ev_energy_unit": "mi/kWh",
         "fuel_types": [
             "Regular",
             "Midgrade",
             "Premium",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {
@@ -42,10 +44,13 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "KM/L",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "Regular",
+            "Midgrade",
             "Premium",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {
@@ -71,9 +76,11 @@ COUNTRY_CONFIGS = {
         "distance_unit": "Mile",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "MPG",
+        "ev_energy_unit": "mi/kWh",
         "fuel_types": [
             "Petrol",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {
@@ -99,9 +106,11 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "L/100KM",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "Petrol",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {
@@ -127,9 +136,11 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "L/100KM",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "Petrol",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {
@@ -155,10 +166,12 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "KM/L",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "Unleaded",
             "Premium",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {
@@ -184,10 +197,12 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "KM/L",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "91",
             "95",
             "Diesel",
+            "Electric"
         ],  
         "subscription_plans": {
             "basic": {
@@ -213,11 +228,13 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "KM/L",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "92",
             "95",
             "98",
             "Diesel",
+            "Electric"
         ],  
         "subscription_plans": {
             "basic": {
@@ -243,10 +260,12 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "KM/L",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "Special 95",
             "Super 98",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {
@@ -272,10 +291,12 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "KM/L",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "91",
             "95",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {
@@ -301,10 +322,12 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "KM/L",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "Gasoline",
             "Ethanol",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {
@@ -330,10 +353,12 @@ COUNTRY_CONFIGS = {
         "distance_unit": "KM",
         "fuel_volume_unit": "Litre",
         "fuel_economy_unit": "KM/L",
+        "ev_energy_unit": "kWh/100KM",
         "fuel_types": [
             "Regular",
             "Premium",
             "Diesel",
+            "Electric"
         ],
         "subscription_plans": {
             "basic": {

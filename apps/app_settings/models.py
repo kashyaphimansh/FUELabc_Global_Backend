@@ -33,6 +33,11 @@ class CountryConfig(models.Model):
         max_length=20
     )
 
+    ev_energy_unit = models.CharField(
+        max_length=20,
+        default="kWh/100KM"
+    )
+
     fuel_types = models.JSONField(
         default=list
     )
