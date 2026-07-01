@@ -174,7 +174,13 @@ class EfficiencyCalculatorAPIView(APIView):
                 speed_range=serializer.validated_data.get("speed_range"),
             )
 
-            result = format_efficiency_response(raw)
+            result = format_efficiency_response(
+            raw,
+            country_code=serializer.validated_data.get(
+                "country_code",
+                "IN",
+            ),
+        )
 
             return Response(
                 {

@@ -42,10 +42,15 @@ class EfficiencyRequestSerializer(serializers.Serializer):
     )
 
     speed_range = serializers.ListField(
-        child=serializers.IntegerField(),
-        min_length=2,
-        max_length=2,
-        required=False
+    child=serializers.IntegerField(),
+    min_length=2,
+    max_length=2,
+    required=False
+    )
+
+    country_code = serializers.CharField(
+    max_length=2,
+    default="IN"
     )
 
     def validate_speed_range(self, value):
