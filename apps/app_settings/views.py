@@ -15,7 +15,12 @@ class SettingsView(APIView):
 
     def get(self, request):
 
-        country_code = request.user.country_code or "US"
+        country_code = request.user.country_code
+        is_default_country = False
+
+        if not country_code:
+            country_code = "AU"
+            is_default_country = True
 
         config = CountryConfig.objects.filter(
             country_code=country_code
@@ -23,13 +28,15 @@ class SettingsView(APIView):
 
         if not config:
             config = CountryConfig.objects.filter(
-                country_code="US"
+                country_code="AU"
             ).first()
+            is_default_country = True
 
         return APIResponse.success(
             data={
                 "country_code": config.country_code,
                 "country_name": config.country_name,
+                "is_default_country": is_default_country,
                 "currency_code": config.currency_code,
                 "currency_symbol": config.currency_symbol,
                 "distance_unit": config.distance_unit,
@@ -37,9 +44,9 @@ class SettingsView(APIView):
                 "fuel_economy_unit": config.fuel_economy_unit,
                 "fuel_types": config.fuel_types,
                 "subscription_plans": config.subscription_plans,
+                "ev_energy_unit": config.ev_energy_unit,
             }
         )
-
 class TermsAPIView(APIView):
     def get(self, request):
         return Response({
