@@ -2,7 +2,7 @@
 Response Formatter
 
 Converts internal metric calculations into
-North America (USA / Canada) friendly API response.
+country-appropriate API response.
 
 Calculation logic NEVER changes.
 Only response format changes.
@@ -15,15 +15,29 @@ from .unit_converter import (
 )
 
 
-def format_efficiency_response(result):
+def format_efficiency_response(
+    result,
+    country_code="IN",
+):
     """
     Convert efficiency calculator output
-    into USA / Canada friendly API response format.
+    into country-appropriate API response format.
+
+    country_code:
+        IN  → km/L  (default)
+        AU  → L/100km
+        NZ  → L/100km
     """
+
+    # Country-specific fuel economy unit
+    use_l100km = country_code in ("AU", "NZ")
 
     formatted_rows = []
 
     for row in result["efficiency_table"]:
+
+        kmpl = row["effective_mileage_kmpl"]
+        l100km = round(100 / kmpl, 2) if kmpl > 0 else 0
 
         formatted_rows.append({
 
@@ -33,32 +47,22 @@ def format_efficiency_response(result):
             },
 
             "fuel_efficiency": {
-                "km_per_litre": row["effective_mileage_kmpl"],
-                "mpg": round(
-                    kmpl_to_mpg(row["effective_mileage_kmpl"]),
-                    2,
-                ),
+                "km_per_litre": kmpl,
+                "l_per_100km": l100km,
+                "mpg": round(kmpl_to_mpg(kmpl), 2),
+                "display": f"{l100km} L/100km" if use_l100km else f"{kmpl} km/L",
             },
 
-            # ==============================
-            # FIXED RANGE STRUCTURE
-            # ==============================
             "range": {
                 "km": row["range"]["km"],
                 "miles": row["range"]["miles"],
             },
 
-            # ==============================
-            # FIXED FUEL STRUCTURE
-            # ==============================
             "fuel_required": {
                 "litres": row["fuel_required"]["litres"],
                 "gallons": row["fuel_required"]["gallons"],
             },
 
-            # ==============================
-            # FIXED COST STRUCTURE
-            # ==============================
             "cost": {
                 "cpk": row["cost"]["cpk"],
                 "cost_per_mile": row["cost"]["cpm"],
@@ -75,7 +79,12 @@ def format_efficiency_response(result):
     optimal = result["optimal_speed"]
     summary = result["summary"]
 
+    opt_kmpl = optimal["effective_mileage_kmpl"]
+    opt_l100km = round(100 / opt_kmpl, 2) if opt_kmpl > 0 else 0
+
     return {
+
+        "country_code": country_code,
 
         "optimal_speed": {
             "kmh": optimal["speed_kmh"],
@@ -83,17 +92,13 @@ def format_efficiency_response(result):
             "reason": optimal["reason"],
 
             "fuel_efficiency": {
-                "km_per_litre": optimal["effective_mileage_kmpl"],
-                "mpg": round(
-                    kmpl_to_mpg(optimal["effective_mileage_kmpl"]),
-                    2,
-                ),
+                "km_per_litre": opt_kmpl,
+                "l_per_100km": opt_l100km,
+                "mpg": round(kmpl_to_mpg(opt_kmpl), 2),
+                "display": f"{opt_l100km} L/100km" if use_l100km else f"{opt_kmpl} km/L",
             },
         },
 
-        # ==============================
-        # SUMMARY FIXED
-        # ==============================
         "summary": {
 
             "trip_distance": {
