@@ -48,6 +48,7 @@ class TripHistorySerializer(serializers.ModelSerializer):
     avg_speed       = serializers.SerializerMethodField()
     distance        = serializers.SerializerMethodField()
     average_mileage = serializers.SerializerMethodField()
+    country_code    = serializers.SerializerMethodField()
     co2_emission    = serializers.SerializerMethodField()
     start_location  = serializers.CharField(read_only=True)
     destination     = serializers.CharField(read_only=True)
@@ -148,6 +149,9 @@ class TripHistorySerializer(serializers.ModelSerializer):
             "kmpl": round(kmpl, 2),
             "mpg":  round(kmpl * 2.35214, 2),
         }
+    
+    def get_country_code(self, obj):
+        return obj.country_code if hasattr(obj, 'country_code') else "IN"
 
     # ----------------------------------------------------------
     # CO2
@@ -177,4 +181,5 @@ class TripHistorySerializer(serializers.ModelSerializer):
             "co2_emission",
             "is_ended",
             "trip_type",
+            "country_code",
         ]

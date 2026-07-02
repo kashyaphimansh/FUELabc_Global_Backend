@@ -62,6 +62,7 @@ class Trip(models.Model):
     start_location  = models.CharField(max_length=500, blank=True, default="")
     destination     = models.CharField(max_length=500, blank=True, default="")
 
+    country_code = models.CharField(max_length=5, default="IN")
     is_ended     = models.BooleanField(default=False)
     is_archieved = models.BooleanField(default=False)
 
