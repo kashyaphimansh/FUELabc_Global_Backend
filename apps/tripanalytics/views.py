@@ -11,6 +11,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.utils.dateparse import parse_datetime
 
 from .models import Trip
 from .serializers import TripHistorySerializer
@@ -67,3 +68,34 @@ class TripHistoryView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        
+        
+
+class TripSaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            trip = Trip.objects.create(
+                user=request.user,
+                vehicle_id=request.data.get("vehicle_id"),
+                start_time=parse_datetime(request.data.get("start_time", "")),
+                end_time=parse_datetime(request.data.get("end_time", "")),
+                distance=request.data.get("distance_km", 0.0),
+                start_location=request.data.get("start_location", ""),
+                destination=request.data.get("destination", ""),
+                country_code=request.data.get("country_code", "IN"),
+                average_mileage=request.data.get("average_mileage"),
+                is_ended=True,
+            )
+            # Speed samples save karo
+            for sample in request.data.get("speed_samples", []):
+                TripData.objects.create(
+                    trip=trip,
+                    speed=sample.get("speed", 0),
+                    time=sample.get("time", 0),
+                )
+            return Response({"status": "success", "trip_id": trip.id}, status=201)
+        except Exception as e:
+            logger.exception(e)
+            return Response({"status": "error", "message": str(e)}, status=400)
