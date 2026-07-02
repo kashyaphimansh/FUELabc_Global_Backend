@@ -180,8 +180,8 @@ COUNTRY_CONFIGS = {
                 "currency": "AUD",
             },
             "premium": {
-                "monthly_price": 4.99,
-                "yearly_price": 44.99,
+                "monthly_price": 6.99,
+                "yearly_price": 64.99,
                 "monthly_display_price": "A$4.99/month",
                 "yearly_display_price": "A$44.99/year",
                 "description": "Unlock all premium features."
@@ -211,8 +211,8 @@ COUNTRY_CONFIGS = {
                 "currency": "NZD",
             },
             "premium": {
-                "monthly_price": 4.99,
-                "yearly_price": 44.99,
+                "monthly_price": 6.99,
+                "yearly_price": 64.99,
                 "monthly_display_price": "NZ$4.99/month",
                 "yearly_display_price": "NZ$44.99/year",
                 "description": "Unlock all premium features."
@@ -243,8 +243,8 @@ COUNTRY_CONFIGS = {
                 "currency": "SGD",
             },
             "premium": {
-                "monthly_price": 4.99,
-                "yearly_price": 44.99,
+                "monthly_price": 5.99,
+                "yearly_price": 54.99,
                 "monthly_display_price": "S$4.99/month",
                 "yearly_display_price": "S$44.99/year",
                 "description": "Unlock all premium features."
