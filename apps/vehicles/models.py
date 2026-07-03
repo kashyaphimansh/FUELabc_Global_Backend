@@ -10,6 +10,12 @@ class Vehicle(models.Model):
         related_name='vehicles'
     )
 
+    category = models.CharField(
+        max_length=30,
+        blank=True,
+        default=""
+    )
+
     vehicle_type = models.CharField(max_length=50)
 
     make = models.CharField(max_length=100)
@@ -62,24 +68,65 @@ class Vehicle(models.Model):
         return f"{self.make} {self.model}"
 
 class VehicleCatalog(models.Model):
+
+    CATEGORY_CHOICES = [
+        ("passenger", "Passenger"),
+        ("commercial", "Commercial"),
+        ("two_wheeler", "Two Wheeler"),
+    ]
+
+    VEHICLE_TYPE_CHOICES = [
+        ("hatchback", "Hatchback"),
+        ("sedan", "Sedan"),
+        ("suv", "SUV"),
+
+        ("pickup", "Pickup"),
+        ("mini_truck", "Mini Truck"),
+        ("medium_truck", "Medium Truck"),
+        ("large_truck", "Large Truck"),
+        ("mini_bus", "Mini Bus"),
+        ("full_bus", "Full Bus"),
+
+        ("motorcycle", "Motorcycle"),
+        ("three_wheeler", "Three Wheeler"),
+        ("bicycle", "Bicycle"),
+        ("other", "Other"),
+    ]
+
+    category = models.CharField(
+        max_length=30,
+        choices=CATEGORY_CHOICES,
+    )
+
+    vehicle_type = models.CharField(
+        max_length=30,
+        choices=VEHICLE_TYPE_CHOICES,
+    )
+
     make = models.CharField(max_length=100)
+
     model = models.CharField(max_length=100)
 
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
-        blank=True
+        blank=True,
     )
 
-    created_by_admin = models.BooleanField(default=False)
+    created_by_admin = models.BooleanField(default=True)
 
     is_active = models.BooleanField(default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("make", "model")
+        unique_together = (
+            "category",
+            "vehicle_type",
+            "make",
+            "model",
+        )
 
     def __str__(self):
         return f"{self.make} {self.model}"

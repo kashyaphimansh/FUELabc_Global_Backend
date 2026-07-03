@@ -29,6 +29,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 4.99,
                 "yearly_price": 44.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "$4.99/month",
                 "yearly_display_price": "$44.99/year",
                 "description": "Unlock all premium features."
@@ -61,6 +63,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 4.99,
                 "yearly_price": 44.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "C$4.99/month",
                 "yearly_display_price": "C$44.99/year",
                 "description": "Unlock all premium features."
@@ -91,6 +95,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 4.99,
                 "yearly_price": 44.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "£4.99/month",
                 "yearly_display_price": "£44.99/year",
                 "description": "Unlock all premium features."
@@ -121,6 +127,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 4.99,
                 "yearly_price": 44.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "€4.99/month",
                 "yearly_display_price": "€44.99/year",
                 "description": "Unlock all premium features."
@@ -151,6 +159,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 4.99,
                 "yearly_price": 44.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "€4.99/month",
                 "yearly_display_price": "€44.99/year",
                 "description": "Unlock all premium features."
@@ -182,8 +192,10 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 6.99,
                 "yearly_price": 64.99,
-                "monthly_display_price": "A$4.99/month",
-                "yearly_display_price": "A$44.99/year",
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
+                "monthly_display_price": "A$6.99/month",
+                "yearly_display_price": "A$64.99/year",
                 "description": "Unlock all premium features."
             }
         }
@@ -213,6 +225,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 6.99,
                 "yearly_price": 64.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "NZ$4.99/month",
                 "yearly_display_price": "NZ$44.99/year",
                 "description": "Unlock all premium features."
@@ -245,8 +259,10 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 5.99,
                 "yearly_price": 54.99,
-                "monthly_display_price": "S$4.99/month",
-                "yearly_display_price": "S$44.99/year",
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
+                "monthly_display_price": "S$5.99/month",
+                "yearly_display_price": "S$54.99/year",
                 "description": "Unlock all premium features."
             }
         }
@@ -276,6 +292,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 4.99,
                 "yearly_price": 44.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "AED4.99/month",
                 "yearly_display_price": "AED44.99/year",
                 "description": "Unlock all premium features."
@@ -307,6 +325,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 4.99,
                 "yearly_price": 44.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "SAR4.99/month",
                 "yearly_display_price": "SAR44.99/year",
                 "description": "Unlock all premium features."
@@ -338,6 +358,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 4.99,
                 "yearly_price": 44.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "R$4.99/month",
                 "yearly_display_price": "R$44.99/year",
                 "description": "Unlock all premium features."
@@ -369,6 +391,8 @@ COUNTRY_CONFIGS = {
             "premium": {
                 "monthly_price": 4.99,
                 "yearly_price": 44.99,
+                "monthly_duration_days": 30,
+                "yearly_duration_days": 365,
                 "monthly_display_price": "$4.99/month",
                 "yearly_display_price": "$44.99/year",
                 "description": "Unlock all premium features."
@@ -408,4 +432,4 @@ class Command(BaseCommand):
                 f"Inserted {len(configs)} countries."
             )
         )
-        call_command("seed_subscription_plans")
+    
