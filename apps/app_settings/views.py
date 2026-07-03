@@ -36,8 +36,26 @@ class SettingsView(APIView):
                 "distance_unit": config.distance_unit,
                 "fuel_volume_unit": config.fuel_volume_unit,
                 "fuel_economy_unit": config.fuel_economy_unit,
-                "ev_energy_unit": config.ev_energy_unit,
+                "ev_price_unit": config.ev_price_unit,
+                "ev_efficiency_unit": config.ev_efficiency_unit,
 
+                "fuel_price_min": config.fuel_price_min,
+                "fuel_price_max": config.fuel_price_max,
+
+                "ev_price_min": config.ev_price_min,
+                "ev_price_max": config.ev_price_max,
+
+                "fuel_efficiency_min": config.fuel_efficiency_min,
+                "fuel_efficiency_max": config.fuel_efficiency_max,
+
+                "ev_efficiency_min": config.ev_efficiency_min,
+                "ev_efficiency_max": config.ev_efficiency_max,
+
+                "speed_min": config.speed_min,
+                "speed_max": config.speed_max,
+
+                "yearly_distance_min": config.yearly_distance_min,
+                "yearly_distance_max": config.yearly_distance_max,
                 "fuel_types": config.fuel_types,
                 "subscription_plans": config.subscription_plans,
 

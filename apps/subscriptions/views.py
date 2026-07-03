@@ -26,9 +26,12 @@ class CreateOrderView(APIView):
         ).first()
 
         if not country_config:
-            country_config = CountryConfig.objects.get(country_code="AU")
+            country_config = CountryConfig.objects.get(
+                country_code="AU"
+            )
 
         plans = country_config.subscription_plans
+        print("PLANS =", plans)
 
         active_subscription = UserSubscription.objects.filter(
             user=request.user,
@@ -44,42 +47,21 @@ class CreateOrderView(APIView):
                 status=400,
             )
 
-        country_code = request.user.country_code or "AU"
+        plan = plans.get(plan_code)
 
-        country_config = CountryConfig.objects.filter(
-            country_code=country_code
-        ).first()
-
-        if not country_config:
-            country_config = CountryConfig.objects.get(
-                country_code="AU"
-            )
-
-        plans = country_config.subscription_plans
-
-        if plan_code == "premium_monthly":
-            amount = plans["premium"]["monthly_price"]
-            duration_days = plans["premium"]["monthly_duration_days"]
-
-        elif plan_code == "premium_yearly":
-            amount = plans["premium"]["yearly_price"]
-            duration_days = plans["premium"]["yearly_duration_days"]
-
-        elif plan_code == "basic":
-            amount = plans["basic"]["price"]
-            duration_days = 0
-
-        else:
+        if not plan:
             return Response(
                 {
                     "success": False,
-                    "error": "Invalid plan"
+                    "error": "Invalid plan",
                 },
                 status=400,
             )
 
-        amount_paise = int(float(amount) * 100)
+        amount = plan["price"]
+        duration_days = plan.get("duration_days", 0)
 
+        amount_paise = int(float(amount) * 100)
         currency = country_config.currency_code
 
         client = razorpay.Client(
@@ -216,12 +198,12 @@ class VerifyPaymentView(APIView):
             user = request.user
 
             user.is_premium = True
-
             user.subscription_plan = subscription.plan_code
+            user.subscription_expires_at = subscription.expires_at
 
-            user.subscription_expires_at = (
-                subscription.expires_at
-            )
+            user.trip_limit = plan.get("trip_limit", 0)
+            user.vehicle_limit = plan.get("vehicle_limit", 1)
+
             user.trips_used = 0
 
             user.save(
@@ -229,14 +211,24 @@ class VerifyPaymentView(APIView):
                     "is_premium",
                     "subscription_plan",
                     "subscription_expires_at",
-                    "trips_used"
+                    "trip_limit",
+                    "vehicle_limit",
+                    "trips_used",
                 ]
-            )
+)
 
             return Response({
-                "success": True
+                "success": True,
+                "subscription": {
+                    "is_premium": user.is_premium,
+                    "plan": user.subscription_plan,
+                    "expires_at": user.subscription_expires_at,
+                    "trips_used": user.trips_used,
+                    "trip_limit": user.trip_limit,
+                    "vehicle_limit": user.vehicle_limit,
+                }
             })
-
+            
         except Exception as e:
 
             return Response(
