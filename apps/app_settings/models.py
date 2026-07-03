@@ -33,10 +33,33 @@ class CountryConfig(models.Model):
         max_length=20
     )
 
-    ev_energy_unit = models.CharField(
+    ev_price_unit = models.CharField(
         max_length=20,
-        default="kWh/100KM"
+        default="kWh"
     )
+
+    ev_efficiency_unit = models.CharField(
+        max_length=20,
+        default="km/kWh"
+    )
+
+    fuel_price_min = models.FloatField(default=0)
+    fuel_price_max = models.FloatField(default=200)
+
+    ev_price_min = models.FloatField(default=0)
+    ev_price_max = models.FloatField(default=50)
+
+    fuel_efficiency_min = models.FloatField(default=1)
+    fuel_efficiency_max = models.FloatField(default=100)
+
+    ev_efficiency_min = models.FloatField(default=2)
+    ev_efficiency_max = models.FloatField(default=12)
+
+    speed_min = models.FloatField(default=10)
+    speed_max = models.FloatField(default=200)
+
+    yearly_distance_min = models.IntegerField(default=1000)
+    yearly_distance_max = models.IntegerField(default=100000)
 
     fuel_types = models.JSONField(
         default=list

@@ -7,67 +7,74 @@ from rest_framework import status
 from .models import Vehicle, VehicleCatalog
 from .serializers import VehicleSerializer
 from apps.subscriptions.services import get_user_entitlements
+from django.db import transaction
 
 class VehicleSetupView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request):
+        try:
+            limits = get_user_entitlements(request.user)
 
-        limits = get_user_entitlements(request.user)
+            current_vehicle_count = Vehicle.objects.filter(
+                user=request.user
+            ).count()
 
-        current_vehicle_count = Vehicle.objects.filter(
-            user=request.user
-        ).count()
+            vehicle_limit = limits.get("vehicle_limit", 9999)
 
-        if current_vehicle_count >= limits["vehicle_limit"]:
+            if current_vehicle_count >= vehicle_limit:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Vehicle limit reached",
+                        "upgrade_required": True
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            serializer = VehicleSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            make = serializer.validated_data["make"]
+            model = serializer.validated_data["model"]
+            vehicle_type = serializer.validated_data["vehicle_type"]
+
+            catalog = VehicleCatalog.objects.filter(
+                vehicle_type=vehicle_type,
+                make=make,
+                model=model,
+                is_active=True
+            ).first()
+
+            category = catalog.category if catalog else ""
+
+            vehicle = serializer.save(
+                user=request.user,
+                category=category
+            )
+
+            request.user.is_vehicle_setup_done = True
+            request.user.save(update_fields=["is_vehicle_setup_done"])
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "Vehicle Added",
+                    "data": VehicleSerializer(vehicle).data
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
             return Response(
                 {
                     "success": False,
-                    "message": "Vehicle limit reached",
-                    "upgrade_required": True
+                    "message": str(e)
                 },
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        serializer = VehicleSerializer(
-            data=request.data
-        )
-
-        serializer.is_valid(
-            raise_exception=True
-        )
-        
-        make = serializer.validated_data["make"]
-        model = serializer.validated_data["model"]
-        vehicle_type = serializer.validated_data["vehicle_type"]
-
-        catalog = VehicleCatalog.objects.filter(
-            vehicle_type=vehicle_type,
-            make=make,
-            model=model,
-            is_active=True
-        ).first()
-
-        category = catalog.category if catalog else ""
-
-        vehicle = serializer.save(
-            user=request.user,
-            category=category
-        )
-
-        request.user.is_vehicle_setup_done = True
-        request.user.save()
-
-        return Response(
-            {
-                "success": True,
-                "message": "Vehicle Added",
-                "data": VehicleSerializer(vehicle).data
-            },
-            status=status.HTTP_201_CREATED
-        )
-        
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )        
 class VehicleListView(APIView):
 
     permission_classes = [IsAuthenticated]
