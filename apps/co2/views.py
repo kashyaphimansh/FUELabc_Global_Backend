@@ -344,6 +344,8 @@ class CO2TrackingView(APIView):
                 "trip_timestamp":  trip.start_time.astimezone(pytz.utc).isoformat() if trip.start_time else None,
                 "transport_mode":  transport_mode,
                 "vehicle_name":    vehicle_name,
+                "country_code":    trip.country_code if hasattr(trip, 'country_code') else "IN",
+
             })
 
         return trip_data, {
