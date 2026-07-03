@@ -32,7 +32,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     country_code = models.CharField(
         max_length=5,
-        default="US"
+        default="AU"
     )
     
     dial_code = models.CharField(max_length=10, default="+1")

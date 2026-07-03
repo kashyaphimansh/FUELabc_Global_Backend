@@ -31,4 +31,6 @@ urlpatterns = [
     path('vehicle-makes/', VehicleMakesView.as_view()),
 
     path('vehicle-models/', VehicleModelsView.as_view()),
+
+    path('vehicle-category/', VehicleCategoriesView.as_view())
 ]
