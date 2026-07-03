@@ -89,7 +89,6 @@ class VehicleListView(APIView):
             vehicles,
             many=True
         )
-        print(serializer.data)
         return Response(
             {
                 "success": True,
