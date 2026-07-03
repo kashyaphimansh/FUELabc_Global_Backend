@@ -6,7 +6,6 @@ from django.utils import timezone
 from datetime import timedelta
 import razorpay
 from .models import (
-    SubscriptionPlan,
     UserSubscription,
     Payment,
 )
@@ -20,16 +19,16 @@ class CreateOrderView(APIView):
         plan_code = request.data.get("plan")
         print("PLAN RECEIVED =", plan_code)
 
-        try:
-            plan = SubscriptionPlan.objects.get(
-                code=plan_code,
-                is_active=True,
-            )
-        except SubscriptionPlan.DoesNotExist:
-            return Response(
-                {"error": "Invalid plan"},
-                status=400,
-            )
+        country_code = request.user.country_code or "AU"
+
+        country_config = CountryConfig.objects.filter(
+            country_code=country_code
+        ).first()
+
+        if not country_config:
+            country_config = CountryConfig.objects.get(country_code="AU")
+
+        plans = country_config.subscription_plans
 
         active_subscription = UserSubscription.objects.filter(
             user=request.user,
@@ -45,7 +44,43 @@ class CreateOrderView(APIView):
                 status=400,
             )
 
-        amount_paise = int(plan.price * 100)
+        country_code = request.user.country_code or "AU"
+
+        country_config = CountryConfig.objects.filter(
+            country_code=country_code
+        ).first()
+
+        if not country_config:
+            country_config = CountryConfig.objects.get(
+                country_code="AU"
+            )
+
+        plans = country_config.subscription_plans
+
+        if plan_code == "premium_monthly":
+            amount = plans["premium"]["monthly_price"]
+            duration_days = plans["premium"]["monthly_duration_days"]
+
+        elif plan_code == "premium_yearly":
+            amount = plans["premium"]["yearly_price"]
+            duration_days = plans["premium"]["yearly_duration_days"]
+
+        elif plan_code == "basic":
+            amount = plans["basic"]["price"]
+            duration_days = 0
+
+        else:
+            return Response(
+                {
+                    "success": False,
+                    "error": "Invalid plan"
+                },
+                status=400,
+            )
+
+        amount_paise = int(float(amount) * 100)
+
+        currency = country_config.currency_code
 
         client = razorpay.Client(
             auth=(
@@ -53,17 +88,24 @@ class CreateOrderView(APIView):
                 settings.RAZORPAY_KEY_SECRET,
             )
         )
-        country_config = CountryConfig.objects.get(
-            country_code=request.user.country_code
-        )
 
-        currency = country_config.currency_code
+        try:
+            order = client.order.create({
+                "amount": amount_paise,
+                "currency": currency,
+                "payment_capture": 1,
+            })
+        except Exception as e:
+            import traceback
 
-        order = client.order.create({
-            "amount": amount_paise,
-            "currency": currency,
-            "payment_capture": 1,
-        })
+            traceback.print_exc()
+
+            print("RAZORPAY ERROR =", repr(e))
+
+            return Response({
+                "success": False,
+                "error": str(e),
+            }, status=400)
 
         UserSubscription.objects.filter(
             user=request.user,
@@ -72,7 +114,10 @@ class CreateOrderView(APIView):
 
         subscription = UserSubscription.objects.create(
             user=request.user,
-            plan=plan,
+            plan_code=plan_code,
+            amount=amount,
+            currency=currency,
+            duration_days=duration_days,
             status="pending",
         )
 
@@ -80,14 +125,17 @@ class CreateOrderView(APIView):
             user=request.user,
             subscription=subscription,
             razorpay_order_id=order["id"],
-            amount=plan.price,
-            currency="INR",
+            amount=amount,
+            currency=currency,
             status="created",
         )
 
         return Response({
+            "success": True,
             "order_id": order["id"],
             "amount": amount_paise,
+            "currency": currency,
+            "display_amount": amount,
         })
 
 class VerifyPaymentView(APIView):
@@ -159,11 +207,8 @@ class VerifyPaymentView(APIView):
             subscription.status = "active"
             subscription.starts_at = timezone.now()
 
-            subscription.expires_at = (
-                timezone.now() +
-                timedelta(
-                    days=subscription.plan.duration_days
-                )
+            subscription.expires_at = timezone.now() + timedelta(
+                days=subscription.duration_days
             )
 
             subscription.save()
@@ -172,9 +217,7 @@ class VerifyPaymentView(APIView):
 
             user.is_premium = True
 
-            user.subscription_plan = (
-                subscription.plan.code
-            )
+            user.subscription_plan = subscription.plan_code
 
             user.subscription_expires_at = (
                 subscription.expires_at

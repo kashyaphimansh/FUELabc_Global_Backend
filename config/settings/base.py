@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "apps.co2",
 
     "apps.mileage_advisor", 
+
+    "apps.location",
 ]
 
 MIDDLEWARE = [

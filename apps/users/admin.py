@@ -95,7 +95,10 @@ class UserSubscriptionInline(ReadOnlyInlineMixin, admin.TabularInline):
     model = UserSubscription
     fields = (
         "id",
-        "plan",
+        "plan_code",
+        "amount",
+        "currency",
+        "duration_days",
         "status",
         "starts_at",
         "expires_at",
