@@ -55,12 +55,12 @@ class VerifyPhoneOTPView(APIView):
 
         country_code = serializer.validated_data.get(
             "country_code",
-            "US"
+            "AU"
         )
 
         dial_code = serializer.validated_data.get(
             "dial_code",
-            "+1"
+            "+61"
         )
 
         user = User.objects.filter(
