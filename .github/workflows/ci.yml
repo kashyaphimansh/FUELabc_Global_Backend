@@ -1,0 +1,101 @@
+name: FUELabc AU CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: fuelabc_ci
+          POSTGRES_USER: fuelabc_ci
+          POSTGRES_PASSWORD: fuelabc_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U fuelabc_ci -d fuelabc_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      SECRET_KEY: ci-dummy-secret-key-with-enough-length-and-variety-1234567890
+      DEBUG: "False"
+      FIREBASE_SERVICE_ACCOUNT_KEY_PATH: /tmp/fuelabc-ci-nonexistent-firebase.json
+      RAZORPAY_KEY_ID: ci_dummy_razorpay_key_id
+      RAZORPAY_KEY_SECRET: ci_dummy_razorpay_key_secret
+      DB_NAME: fuelabc_ci
+      DB_USER: fuelabc_ci
+      DB_PASS: fuelabc_ci_password
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_SSLMODE: disable
+      JWT_SIGNING_KEY: ci-dummy-jwt-signing-key-with-enough-length-1234567890
+      EMAIL_HOST: localhost
+      EMAIL_PORT: "1025"
+      EMAIL_HOST_USER: ci_dummy_email_user
+      EMAIL_HOST_PASSWORD: ci_dummy_email_password
+      EMAIL_USE_SSL: "False"
+      EMAIL_USE_TLS: "False"
+      DEFAULT_FROM_EMAIL: ci@example.invalid
+      ALLOWED_HOSTS: localhost,127.0.0.1,au.fuelabc.com
+      CSRF_TRUSTED_ORIGINS: https://au.fuelabc.com
+      CORS_ALLOW_ALL_ORIGINS: "False"
+      CORS_ALLOWED_ORIGINS: https://au.fuelabc.com
+      STATIC_ROOT: /tmp/fuelabc-ci-staticfiles
+      MEDIA_ROOT: /tmp/fuelabc-ci-media
+      SESSION_COOKIE_SECURE: "True"
+      CSRF_COOKIE_SECURE: "True"
+      SECURE_SSL_REDIRECT: "True"
+      SECURE_HSTS_SECONDS: "3600"
+      SECURE_HSTS_INCLUDE_SUBDOMAINS: "False"
+      SECURE_HSTS_PRELOAD: "False"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements/base.txt
+            requirements/production.txt
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt -r requirements/production.txt
+
+      - name: Check installed packages
+        run: python -m pip check
+
+      - name: Run Django system check
+        run: python manage.py check
+
+      - name: Run Django deployment check
+        run: python manage.py check --deploy
+
+      - name: Check migration drift
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        run: python manage.py test --noinput
