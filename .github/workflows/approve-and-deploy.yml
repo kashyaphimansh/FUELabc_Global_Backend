@@ -1,0 +1,368 @@
+name: Approve and Deploy FUELabc AU
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+concurrency:
+  group: fuelabc-au-production
+  cancel-in-progress: false
+
+jobs:
+  validate-approval:
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.validate.outputs.should_deploy }}
+      commit_sha: ${{ steps.validate.outputs.commit_sha }}
+      issue_number: ${{ steps.validate.outputs.issue_number }}
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Validate approval comment
+        id: validate
+        uses: actions/github-script@v7
+        env:
+          FUELABC_AU_PRODUCTION_APPROVERS: ${{ vars.FUELABC_AU_PRODUCTION_APPROVERS }}
+        with:
+          script: |
+            const { execFileSync } = require('child_process');
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issueNumber = context.payload.issue.number;
+            const actor = context.actor;
+            const trimmedComment = (context.payload.comment.body || '').trim();
+            const marker = '<!-- fuelabc-au-production-deployment -->';
+
+            core.setOutput('should_deploy', 'false');
+            core.setOutput('issue_number', String(issueNumber));
+
+            async function addComment(body) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body,
+              });
+            }
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name,
+                  color,
+                  description,
+                });
+              }
+            }
+
+            if (context.payload.issue.pull_request) {
+              core.info('Ignoring approval command on pull request conversation.');
+              return;
+            }
+
+            if (trimmedComment !== '/approve-production') {
+              core.info('Ignoring comment because it is not the exact approval command.');
+              return;
+            }
+
+            const approvers = (process.env.FUELABC_AU_PRODUCTION_APPROVERS || '')
+              .split(',')
+              .map((entry) => entry.trim().toLowerCase())
+              .filter(Boolean);
+
+            if (!approvers.includes(actor.toLowerCase())) {
+              await addComment(`Production approval denied for @${actor}.`);
+              return;
+            }
+
+            const issueResponse = await github.rest.issues.get({
+              owner,
+              repo,
+              issue_number: issueNumber,
+            });
+            const issue = issueResponse.data;
+            const issueBody = issue.body || '';
+
+            if (issue.state !== 'open') {
+              await addComment('Production approval failed: approval issue is not open.');
+              core.setFailed('Approval issue is not open.');
+              return;
+            }
+
+            if (!issueBody.includes(marker)) {
+              await addComment('Production approval failed: approval metadata marker is missing.');
+              core.setFailed('Approval metadata marker is missing.');
+              return;
+            }
+
+            const labels = issue.labels.map((label) => {
+              return typeof label === 'string' ? label : label.name;
+            });
+            if (!labels.includes('awaiting-approval')) {
+              await addComment('Production approval failed: issue is not awaiting approval.');
+              core.setFailed('Approval issue is not awaiting approval.');
+              return;
+            }
+
+            const shaMatches = [...issueBody.matchAll(/^FUELABC_AU_COMMIT_SHA=([0-9a-fA-F]{40})$/gm)];
+            const runMatches = [...issueBody.matchAll(/^FUELABC_AU_CI_RUN_ID=([0-9]+)$/gm)];
+
+            if (shaMatches.length !== 1 || runMatches.length !== 1) {
+              await addComment('Production approval failed: approval metadata is invalid.');
+              core.setFailed('Approval metadata is invalid.');
+              return;
+            }
+
+            const commitSha = shaMatches[0][1].toLowerCase();
+            const ciRunId = Number(runMatches[0][1]);
+            core.setOutput('commit_sha', commitSha);
+
+            await github.rest.repos.getCommit({
+              owner,
+              repo,
+              ref: commitSha,
+            });
+
+            try {
+              execFileSync('git', ['merge-base', '--is-ancestor', commitSha, 'HEAD'], {
+                stdio: 'ignore',
+              });
+            } catch (error) {
+              await addComment('Production approval failed: commit is not reachable from main.');
+              core.setFailed('Commit is not reachable from main.');
+              return;
+            }
+
+            const runResponse = await github.rest.actions.getWorkflowRun({
+              owner,
+              repo,
+              run_id: ciRunId,
+            });
+            const run = runResponse.data;
+
+            const runChecks = [
+              run.conclusion === 'success',
+              (run.head_sha || '').toLowerCase() === commitSha,
+              run.head_branch === 'main',
+              run.event === 'push',
+              run.name === 'FUELabc AU CI',
+            ];
+
+            if (!runChecks.every(Boolean)) {
+              await addComment('Production approval failed: CI workflow metadata did not match the approved commit.');
+              core.setFailed('CI workflow metadata did not match the approved commit.');
+              return;
+            }
+
+            await ensureLabel(
+              'deployment-in-progress',
+              '1d76db',
+              'Production deployment is in progress'
+            );
+            await ensureLabel(
+              'deployed',
+              '0e8a16',
+              'Production deployment completed'
+            );
+            await ensureLabel(
+              'deployment-failed',
+              'b60205',
+              'Production deployment failed'
+            );
+
+            try {
+              await github.rest.issues.removeLabel({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                name: 'awaiting-approval',
+              });
+            } catch (error) {
+              if (error.status !== 404) {
+                throw error;
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number: issueNumber,
+              labels: ['deployment-in-progress'],
+            });
+
+            core.setOutput('should_deploy', 'true');
+
+  deploy:
+    needs: validate-approval
+    if: needs.validate-approval.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    env:
+      COMMIT_SHA: ${{ needs.validate-approval.outputs.commit_sha }}
+      ISSUE_NUMBER: ${{ needs.validate-approval.outputs.issue_number }}
+      ACTIONS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+    steps:
+      - name: Configure SSH
+        env:
+          FUELABC_AU_DEPLOY_SSH_KEY: ${{ secrets.FUELABC_AU_DEPLOY_SSH_KEY }}
+          FUELABC_AU_SSH_HOST_KEY: ${{ secrets.FUELABC_AU_SSH_HOST_KEY }}
+        run: |
+          set -euo pipefail
+          : "${FUELABC_AU_DEPLOY_SSH_KEY:?FUELABC_AU_DEPLOY_SSH_KEY is required}"
+          : "${FUELABC_AU_SSH_HOST_KEY:?FUELABC_AU_SSH_HOST_KEY is required}"
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$FUELABC_AU_DEPLOY_SSH_KEY" > "$HOME/.ssh/fuelabc_au_deploy_key"
+          chmod 600 "$HOME/.ssh/fuelabc_au_deploy_key"
+          printf '%s\n' "$FUELABC_AU_SSH_HOST_KEY" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+      - name: Deploy approved commit
+        id: deploy
+        env:
+          DEPLOY_HOST: ${{ vars.FUELABC_AU_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.FUELABC_AU_DEPLOY_USER }}
+          DEPLOY_PORT: ${{ vars.FUELABC_AU_DEPLOY_PORT }}
+          DEPLOY_BASE_PATH: ${{ vars.FUELABC_AU_BASE_PATH }}
+          DEPLOY_SERVICE_NAME: ${{ vars.FUELABC_AU_SERVICE_NAME }}
+        run: |
+          set -euo pipefail
+          : "${DEPLOY_HOST:?FUELABC_AU_DEPLOY_HOST is required}"
+          : "${DEPLOY_USER:?FUELABC_AU_DEPLOY_USER is required}"
+          : "${DEPLOY_PORT:?FUELABC_AU_DEPLOY_PORT is required}"
+          : "${DEPLOY_BASE_PATH:?FUELABC_AU_BASE_PATH is required}"
+          : "${DEPLOY_SERVICE_NAME:?FUELABC_AU_SERVICE_NAME is required}"
+          set +e
+          ssh \
+            -i "$HOME/.ssh/fuelabc_au_deploy_key" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -p "$DEPLOY_PORT" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            -- sudo /usr/local/sbin/deploy-fuelabc-au "$COMMIT_SHA" 2>&1 | tee deploy-output.txt
+          status=${PIPESTATUS[0]}
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Update approval issue
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          COMMIT_SHA: ${{ env.COMMIT_SHA }}
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
+          PUBLIC_URL: ${{ vars.FUELABC_AU_PUBLIC_URL }}
+          ACTIONS_RUN_URL: ${{ env.ACTIONS_RUN_URL }}
+          DEPLOY_OUTCOME: ${{ steps.deploy.outcome }}
+        with:
+          script: |
+            const fs = require('fs');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = Number(process.env.ISSUE_NUMBER);
+            const commitSha = process.env.COMMIT_SHA;
+            const publicUrl = process.env.PUBLIC_URL || 'not configured';
+            const actionsRunUrl = process.env.ACTIONS_RUN_URL;
+            const deployOutcome = process.env.DEPLOY_OUTCOME || 'failure';
+            const output = fs.existsSync('deploy-output.txt')
+              ? fs.readFileSync('deploy-output.txt', 'utf8')
+              : '';
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name,
+                  color,
+                  description,
+                });
+              }
+            }
+
+            async function removeLabel(name) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+              }
+            }
+
+            await ensureLabel('deployed', '0e8a16', 'Production deployment completed');
+            await ensureLabel('deployment-failed', 'b60205', 'Production deployment failed');
+            await removeLabel('deployment-in-progress');
+
+            if (deployOutcome === 'success') {
+              await github.rest.issues.addLabels({
+                owner,
+                repo,
+                issue_number,
+                labels: ['deployed'],
+              });
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: `FUELabc AU production deployment completed successfully.\n\nCommit SHA: ${commitSha}\nProduction URL: ${publicUrl}`,
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                state: 'closed',
+              });
+              return;
+            }
+
+            await github.rest.issues.addLabels({
+              owner,
+              repo,
+              issue_number,
+              labels: ['deployment-failed'],
+            });
+
+            const rollbackCompleted = output.includes('DEPLOYMENT_STATUS=FAILED_ROLLED_BACK');
+            const rollbackFailed = output.includes('DEPLOYMENT_STATUS=ROLLBACK_FAILED');
+            const rollbackLine = rollbackCompleted
+              ? '\n\nAutomatic code rollback completed.'
+              : rollbackFailed
+                ? '\n\nCRITICAL: AUTOMATIC ROLLBACK FAILED.'
+                : '';
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body: `FUELabc AU production deployment failed.\n\nCommit SHA: ${commitSha}\nGitHub Actions run: ${actionsRunUrl}\n\nThe server deployment script performs automatic code rollback after post-activation health failure.\nDatabase migrations are not automatically reversed.\nStatic files are not automatically rolled back.${rollbackLine}`,
+            });
