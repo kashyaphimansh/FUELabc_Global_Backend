@@ -211,55 +211,58 @@ jobs:
 
             core.setOutput('should_deploy', 'true');
 
+  debug-approval-outputs:
+    needs: validate-approval
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Show approval outputs
+        run: |
+          echo "should_deploy=${{ needs['validate-approval'].outputs.should_deploy }}"
+          echo "commit_sha=${{ needs['validate-approval'].outputs.commit_sha }}"
+          echo "issue_number=${{ needs['validate-approval'].outputs.issue_number }}"
+
   deploy:
     needs: validate-approval
-    if: needs.validate-approval.outputs.should_deploy == 'true'
+    if: ${{ needs['validate-approval'].outputs.should_deploy == 'true' }}
     runs-on: ubuntu-latest
     env:
-      COMMIT_SHA: ${{ needs.validate-approval.outputs.commit_sha }}
-      ISSUE_NUMBER: ${{ needs.validate-approval.outputs.issue_number }}
+      COMMIT_SHA: ${{ needs['validate-approval'].outputs.commit_sha }}
+      ISSUE_NUMBER: ${{ needs['validate-approval'].outputs.issue_number }}
       ACTIONS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
     steps:
       - name: Configure SSH
         env:
-          FUELABC_AU_DEPLOY_SSH_KEY: ${{ secrets.FUELABC_AU_DEPLOY_SSH_KEY }}
-          FUELABC_AU_SSH_HOST_KEY: ${{ secrets.FUELABC_AU_SSH_HOST_KEY }}
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
         run: |
           set -euo pipefail
-          : "${FUELABC_AU_DEPLOY_SSH_KEY:?FUELABC_AU_DEPLOY_SSH_KEY is required}"
-          : "${FUELABC_AU_SSH_HOST_KEY:?FUELABC_AU_SSH_HOST_KEY is required}"
+          : "${PROD_SSH_KEY:?PROD_SSH_KEY is required}"
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
-          printf '%s\n' "$FUELABC_AU_DEPLOY_SSH_KEY" > "$HOME/.ssh/fuelabc_au_deploy_key"
+          printf '%s\n' "$PROD_SSH_KEY" > "$HOME/.ssh/fuelabc_au_deploy_key"
           chmod 600 "$HOME/.ssh/fuelabc_au_deploy_key"
-          printf '%s\n' "$FUELABC_AU_SSH_HOST_KEY" > "$HOME/.ssh/known_hosts"
-          chmod 600 "$HOME/.ssh/known_hosts"
 
       - name: Deploy approved commit
         id: deploy
         env:
-          DEPLOY_HOST: ${{ vars.FUELABC_AU_DEPLOY_HOST }}
-          DEPLOY_USER: ${{ vars.FUELABC_AU_DEPLOY_USER }}
-          DEPLOY_PORT: ${{ vars.FUELABC_AU_DEPLOY_PORT }}
-          DEPLOY_BASE_PATH: ${{ vars.FUELABC_AU_BASE_PATH }}
-          DEPLOY_SERVICE_NAME: ${{ vars.FUELABC_AU_SERVICE_NAME }}
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_PORT: ${{ secrets.PROD_PORT }}
         run: |
           set -euo pipefail
-          : "${DEPLOY_HOST:?FUELABC_AU_DEPLOY_HOST is required}"
-          : "${DEPLOY_USER:?FUELABC_AU_DEPLOY_USER is required}"
-          : "${DEPLOY_PORT:?FUELABC_AU_DEPLOY_PORT is required}"
-          : "${DEPLOY_BASE_PATH:?FUELABC_AU_BASE_PATH is required}"
-          : "${DEPLOY_SERVICE_NAME:?FUELABC_AU_SERVICE_NAME is required}"
+          : "${PROD_HOST:?PROD_HOST is required}"
+          : "${PROD_USER:?PROD_USER is required}"
+          : "${PROD_PORT:?PROD_PORT is required}"
           set +e
           ssh \
             -i "$HOME/.ssh/fuelabc_au_deploy_key" \
             -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
-            -p "$DEPLOY_PORT" \
-            "$DEPLOY_USER@$DEPLOY_HOST" \
-            -- sudo /usr/local/sbin/deploy-fuelabc-au "$COMMIT_SHA" 2>&1 | tee deploy-output.txt
+            -o StrictHostKeyChecking=accept-new \
+            -p "$PROD_PORT" \
+            "$PROD_USER@$PROD_HOST" \
+            -- sudo /usr/local/bin/deploy-fuelabc-au.sh 2>&1 | tee deploy-output.txt
           status=${PIPESTATUS[0]}
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           exit "$status"
