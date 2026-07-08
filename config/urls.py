@@ -1,9 +1,18 @@
 from django.contrib import admin
 from django.urls import include, path
-from django.contrib import admin
-from django.urls import include, path
+from core.health import healthz, readyz
 
 urlpatterns = [
+
+    path(
+        "healthz/",
+        healthz,
+    ),
+
+    path(
+        "readyz/",
+        readyz,
+    ),
 
     path(
         "admin/",
