@@ -99,29 +99,29 @@ jobs:
             const serviceName = process.env.SERVICE_NAME || 'not configured';
             const title = `FUELabc AU Production Deployment Approval - ${shortSha}`;
             const body = `${marker}
-FUELABC_AU_COMMIT_SHA=${sha}
-FUELABC_AU_CI_RUN_ID=${run.id}
+            FUELABC_AU_COMMIT_SHA=${sha}
+            FUELABC_AU_CI_RUN_ID=${run.id}
 
-## FUELabc AU Production Deployment Approval
+            ## FUELabc AU Production Deployment Approval
 
-Repository: ${owner}/${repo}
-Branch: ${run.head_branch}
-Full commit SHA: ${sha}
-Short SHA: ${shortSha}
-Commit author/login: ${author}
-CI status: ${run.conclusion}
-CI workflow run: ${run.html_url}
-Production URL: ${productionUrl}
-Base path: ${basePath}
-Service name: ${serviceName}
+            Repository: ${owner}/${repo}
+            Branch: ${run.head_branch}
+            Full commit SHA: ${sha}
+            Short SHA: ${shortSha}
+            Commit author/login: ${author}
+            CI status: ${run.conclusion}
+            CI workflow run: ${run.html_url}
+            Production URL: ${productionUrl}
+            Base path: ${basePath}
+            Service name: ${serviceName}
 
-Commit message:
-${safeCommitMessage}
+            Commit message:
+            ${safeCommitMessage}
 
-Comment exactly:
+            Comment exactly:
 
-\`/approve-production\`
-`;
+            \`/approve-production\`
+            `;
 
             const issue = await github.rest.issues.create({
               owner,
