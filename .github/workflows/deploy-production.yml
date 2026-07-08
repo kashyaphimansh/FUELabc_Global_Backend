@@ -1,0 +1,40 @@
+name: Deploy FUELabc AU Production
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Configure SSH
+        shell: bash
+        env:
+          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$PROD_SSH_KEY" > "$HOME/.ssh/fuelabc_au_production_key"
+          chmod 600 "$HOME/.ssh/fuelabc_au_production_key"
+
+      - name: Run production deployment
+        shell: bash
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_PORT: ${{ secrets.PROD_PORT }}
+        run: |
+          set -euo pipefail
+          ssh \
+            -i "$HOME/.ssh/fuelabc_au_production_key" \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -p "$PROD_PORT" \
+            "$PROD_USER@$PROD_HOST" \
+            -- sudo /usr/local/bin/deploy-fuelabc-au.sh
