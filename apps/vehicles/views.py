@@ -7,64 +7,74 @@ from rest_framework import status
 from .models import Vehicle, VehicleCatalog
 from .serializers import VehicleSerializer
 from apps.subscriptions.services import get_user_entitlements
+from django.db import transaction
 
 class VehicleSetupView(APIView):
 
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request):
+        try:
+            limits = get_user_entitlements(request.user)
 
-        limits = get_user_entitlements(request.user)
+            current_vehicle_count = Vehicle.objects.filter(
+                user=request.user
+            ).count()
 
-        current_vehicle_count = Vehicle.objects.filter(
-            user=request.user
-        ).count()
+            vehicle_limit = limits.get("vehicle_limit", 9999)
 
-        if current_vehicle_count >= limits["vehicle_limit"]:
+            if current_vehicle_count >= vehicle_limit:
+                return Response(
+                    {
+                        "success": False,
+                        "message": "Vehicle limit reached",
+                        "upgrade_required": True
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            serializer = VehicleSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            make = serializer.validated_data["make"]
+            model = serializer.validated_data["model"]
+            vehicle_type = serializer.validated_data["vehicle_type"]
+
+            catalog = VehicleCatalog.objects.filter(
+                vehicle_type=vehicle_type,
+                make=make,
+                model=model,
+                is_active=True
+            ).first()
+
+            category = catalog.category if catalog else ""
+
+            vehicle = serializer.save(
+                user=request.user,
+                category=category
+            )
+
+            request.user.is_vehicle_setup_done = True
+            request.user.save(update_fields=["is_vehicle_setup_done"])
+
+            return Response(
+                {
+                    "success": True,
+                    "message": "Vehicle Added",
+                    "data": VehicleSerializer(vehicle).data
+                },
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
             return Response(
                 {
                     "success": False,
-                    "message": "Vehicle limit reached",
-                    "upgrade_required": True
+                    "message": str(e)
                 },
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        serializer = VehicleSerializer(
-            data=request.data
-        )
-
-        serializer.is_valid(
-            raise_exception=True
-        )
-        make = serializer.validated_data["make"]
-        model = serializer.validated_data["model"]
-
-        VehicleCatalog.objects.get_or_create(
-            make=make,
-            model=model,
-            defaults={
-                "created_by": request.user,
-                "created_by_admin": False,
-            }
-        )
-
-        vehicle = serializer.save(
-            user=request.user
-        )
-
-        request.user.is_vehicle_setup_done = True
-        request.user.save()
-
-        return Response(
-            {
-                "success": True,
-                "message": "Vehicle Added",
-                "data": VehicleSerializer(vehicle).data
-            },
-            status=status.HTTP_201_CREATED
-        )
-        
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )        
 class VehicleListView(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -79,7 +89,6 @@ class VehicleListView(APIView):
             vehicles,
             many=True
         )
-
         return Response(
             {
                 "success": True,
@@ -125,12 +134,23 @@ class VehicleUpdateView(APIView):
             data=request.data,
             partial=True
         )
+        
+        serializer.is_valid(raise_exception=True)
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        vehicle_type = serializer.validated_data.get("vehicle_type", vehicle.vehicle_type)
+        make = serializer.validated_data.get("make", vehicle.make)
+        model = serializer.validated_data.get("model", vehicle.model)
 
-        serializer.save()
+        catalog = VehicleCatalog.objects.filter(
+            vehicle_type=vehicle_type,
+            make=make,
+            model=model,
+            is_active=True
+        ).first()
+
+        category = catalog.category if catalog else vehicle.category
+
+        serializer.save(category=category)
 
         return Response(
             {
@@ -160,16 +180,48 @@ class VehicleDeleteView(APIView):
             }
         )
 
+class VehicleCategoriesView(APIView):
+
+    def get(self, request):
+
+        data = {}
+
+        queryset = (
+            VehicleCatalog.objects
+            .filter(is_active=True)
+            .values("category", "vehicle_type")
+            .distinct()
+            .order_by("category", "vehicle_type")
+        )
+
+        for item in queryset:
+            category = item["category"]
+            vehicle_type = item["vehicle_type"]
+
+            data.setdefault(category, []).append(vehicle_type)
+
+        return Response({
+            "success": True,
+            "data": data,
+        })
+
 class VehicleMakesView(APIView):
 
     def get(self, request):
 
-        makes = VehicleCatalog.objects.filter(
-            is_active=True
-        ).values_list(
-            "make",
-            flat=True
-        ).distinct().order_by("make")
+        category = request.query_params.get("category")
+        vehicle_type = request.query_params.get("vehicle_type")
+
+        makes = (
+            VehicleCatalog.objects.filter(
+                category=category,
+                vehicle_type=vehicle_type,
+                is_active=True,
+            )
+            .values_list("make", flat=True)
+            .distinct()
+            .order_by("make")
+        )
 
         return Response(
             {
@@ -181,16 +233,21 @@ class VehicleMakesView(APIView):
 class VehicleModelsView(APIView):
 
     def get(self, request):
-
+        category = request.query_params.get("category")
+        vehicle_type = request.query_params.get("vehicle_type")
         make = request.query_params.get("make")
 
-        models = VehicleCatalog.objects.filter(
-            make=make,
-            is_active=True
-        ).values_list(
-            "model",
-            flat=True
-        ).distinct().order_by("model")
+        models = (
+            VehicleCatalog.objects.filter(
+                category=category,
+                vehicle_type=vehicle_type,
+                make=make,
+                is_active=True,
+            )
+            .values_list("model", flat=True)
+            .distinct()
+            .order_by("model")
+        )
 
         return Response(
             {
@@ -198,3 +255,4 @@ class VehicleModelsView(APIView):
                 "data": list(models)
             }
         )
+

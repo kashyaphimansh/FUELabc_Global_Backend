@@ -9,3 +9,9 @@ firebase-service-account.json
 __pycache__/
 *.pyc
 .venv_new
+# Database dumps
+*.dump
+*.backup
+*.sql
+*dump*
+FUELabc_Global_Backend_7July2026

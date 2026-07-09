@@ -1,7 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
 
-
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -32,7 +31,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     country_code = models.CharField(
         max_length=5,
-        default="US"
+        default="AU"
     )
     
     dial_code = models.CharField(max_length=10, default="+1")

@@ -8,6 +8,7 @@ from .serializers import CustomerSupportSerializer
 from rest_framework import status
 from django.core.mail import send_mail
 from django.conf import settings
+from apps.location.models import Country
 
 class SettingsView(APIView):
 
@@ -15,38 +16,95 @@ class SettingsView(APIView):
 
     def get(self, request):
 
-        country_code = request.user.country_code
-        is_default_country = False
+        default_country = request.user.country_code or "AU"
 
-        if not country_code:
-            country_code = "AU"
-            is_default_country = True
+        countries = []
 
-        config = CountryConfig.objects.filter(
-            country_code=country_code
-        ).first()
+        for config in CountryConfig.objects.all().order_by("country_name"):
+            location_country = Country.objects.filter(
+                iso2=config.country_code
+            ).prefetch_related("states").first()
 
-        if not config:
-            config = CountryConfig.objects.filter(
-                country_code="AU"
-            ).first()
-            is_default_country = True
-
-        return APIResponse.success(
-            data={
+            countries.append({
                 "country_code": config.country_code,
                 "country_name": config.country_name,
-                "is_default_country": is_default_country,
+                "is_default": config.country_code == default_country,
+
                 "currency_code": config.currency_code,
                 "currency_symbol": config.currency_symbol,
+
                 "distance_unit": config.distance_unit,
                 "fuel_volume_unit": config.fuel_volume_unit,
                 "fuel_economy_unit": config.fuel_economy_unit,
+                "ev_price_unit": config.ev_price_unit,
+                "ev_efficiency_unit": config.ev_efficiency_unit,
+
+                "fuel_price_min": config.fuel_price_min,
+                "fuel_price_max": config.fuel_price_max,
+
+                "ev_price_min": config.ev_price_min,
+                "ev_price_max": config.ev_price_max,
+
+                "fuel_efficiency_min": config.fuel_efficiency_min,
+                "fuel_efficiency_max": config.fuel_efficiency_max,
+
+                "ev_efficiency_min": config.ev_efficiency_min,
+                "ev_efficiency_max": config.ev_efficiency_max,
+
+                "speed_min": config.speed_min,
+                "speed_max": config.speed_max,
+
+                "yearly_distance_min": config.yearly_distance_min,
+                "yearly_distance_max": config.yearly_distance_max,
                 "fuel_types": config.fuel_types,
                 "subscription_plans": config.subscription_plans,
-                "ev_energy_unit": config.ev_energy_unit,
+
+                "location_country_id": (
+                    location_country.id if location_country else None
+                ),
+
+                "states": [
+                    {
+                        "id": state.id,
+                        "name": state.name,
+                    }
+                    for state in (
+                        location_country.states.all()
+                        if location_country and config.country_code == default_country
+                        else []
+                    )
+                ],
+            })
+
+        return APIResponse.success(
+            data={
+                "default_country": default_country,
+                "countries": countries,
             }
         )
+
+class CityListAPIView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        state_id = request.GET.get("state_id")
+
+        cities = City.objects.filter(
+            state_id=state_id
+        ).order_by("name")
+
+        return APIResponse.success(
+            data=[
+                {
+                    "id": city.id,
+                    "name": city.name,
+                }
+                for city in cities
+            ]
+        )
+                
 class TermsAPIView(APIView):
     def get(self, request):
         return Response({

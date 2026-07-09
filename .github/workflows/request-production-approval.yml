@@ -1,0 +1,134 @@
+name: Request FUELabc AU Production Approval
+
+on:
+  workflow_run:
+    workflows:
+      - FUELabc AU CI
+    types:
+      - completed
+
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
+jobs:
+  request-approval:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create production approval issue
+        uses: actions/github-script@v7
+        env:
+          PRODUCTION_URL: ${{ vars.FUELABC_AU_PUBLIC_URL }}
+          BASE_PATH: ${{ vars.FUELABC_AU_BASE_PATH }}
+          SERVICE_NAME: ${{ vars.FUELABC_AU_SERVICE_NAME }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const run = context.payload.workflow_run;
+            const sha = run.head_sha;
+            const shortSha = sha.slice(0, 7);
+            const marker = '<!-- fuelabc-au-production-deployment -->';
+            const commitLine = `FUELABC_AU_COMMIT_SHA=${sha}`;
+
+            async function ensureLabel(name, color, description) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo,
+                  name,
+                  color,
+                  description,
+                });
+              }
+            }
+
+            await ensureLabel(
+              'production-deployment',
+              '5319e7',
+              'Production deployment approval request'
+            );
+            await ensureLabel(
+              'awaiting-approval',
+              'fbca04',
+              'Waiting for production deployment approval'
+            );
+
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: 'all',
+              labels: 'production-deployment',
+              per_page: 100,
+            });
+
+            const duplicate = issues.find((issue) => {
+              return !issue.pull_request &&
+                issue.body &&
+                issue.body.includes(marker) &&
+                issue.body.split(/\r?\n/).includes(commitLine);
+            });
+
+            if (duplicate) {
+              core.info(`Approval issue already exists for ${sha}: #${duplicate.number}`);
+              return;
+            }
+
+            const commitMessage = run.head_commit?.message || '';
+            const safeCommitMessage = commitMessage
+              ? commitMessage.split(/\r?\n/).map((line) => `> ${line}`).join('\n')
+              : '> unavailable';
+            const author =
+              run.head_commit?.author?.username ||
+              run.head_commit?.author?.name ||
+              run.actor?.login ||
+              'unavailable';
+            const productionUrl = process.env.PRODUCTION_URL || 'not configured';
+            const basePath = process.env.BASE_PATH || 'not configured';
+            const serviceName = process.env.SERVICE_NAME || 'not configured';
+            const title = `FUELabc AU Production Deployment Approval - ${shortSha}`;
+            const body = `${marker}
+            FUELABC_AU_COMMIT_SHA=${sha}
+            FUELABC_AU_CI_RUN_ID=${run.id}
+
+            ## FUELabc AU Production Deployment Approval
+
+            Repository: ${owner}/${repo}
+            Branch: ${run.head_branch}
+            Full commit SHA: ${sha}
+            Short SHA: ${shortSha}
+            Commit author/login: ${author}
+            CI status: ${run.conclusion}
+            CI workflow run: ${run.html_url}
+            Production URL: ${productionUrl}
+            Base path: ${basePath}
+            Service name: ${serviceName}
+
+            Commit message:
+            ${safeCommitMessage}
+
+            Comment exactly:
+
+            \`/approve-production\`
+            `;
+
+            const issue = await github.rest.issues.create({
+              owner,
+              repo,
+              title,
+              body,
+              labels: ['production-deployment', 'awaiting-approval'],
+            });
+
+            core.info(`Created approval issue #${issue.data.number}`);
