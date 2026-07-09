@@ -70,6 +70,11 @@ class CreateOrderView(APIView):
                 settings.RAZORPAY_KEY_SECRET,
             )
         )
+        country_config = CountryConfig.objects.get(
+            country_code=request.user.country_code
+        )
+
+        currency = country_config.currency_code
 
         try:
             order = client.order.create({
@@ -88,6 +93,11 @@ class CreateOrderView(APIView):
                 "success": False,
                 "error": str(e),
             }, status=400)
+
+        UserSubscription.objects.filter(
+            user=request.user,
+            status="pending",
+        ).delete()
 
         UserSubscription.objects.filter(
             user=request.user,
