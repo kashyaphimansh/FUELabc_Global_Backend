@@ -15,12 +15,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate-approval:
+  inspect-approval:
     runs-on: ubuntu-latest
     outputs:
-      should_deploy: ${{ steps.validate.outputs.should_deploy }}
-      commit_sha: ${{ steps.validate.outputs.commit_sha }}
-      issue_number: ${{ steps.validate.outputs.issue_number }}
+      eligible: ${{ steps.inspect.outputs.eligible }}
+      reason: ${{ steps.inspect.outputs.reason }}
+      commit_sha: ${{ steps.inspect.outputs.commit_sha }}
+      ci_run_id: ${{ steps.inspect.outputs.ci_run_id }}
+      issue_number: ${{ steps.inspect.outputs.issue_number }}
 
     steps:
       - name: Checkout main
@@ -29,8 +31,8 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Validate approval comment
-        id: validate
+      - name: Inspect approval comment
+        id: inspect
         uses: actions/github-script@v7
         env:
           FUELABC_AU_PRODUCTION_APPROVERS: ${{ vars.FUELABC_AU_PRODUCTION_APPROVERS }}
@@ -44,9 +46,22 @@ jobs:
             const actor = context.actor;
             const trimmedComment = (context.payload.comment.body || '').trim();
             const marker = '<!-- fuelabc-au-production-deployment -->';
+            const processedLabels = ['deployment-in-progress', 'deployed', 'deployment-failed'];
 
-            core.setOutput('should_deploy', 'false');
-            core.setOutput('issue_number', String(issueNumber));
+            function setResult({
+              eligible = 'false',
+              reason,
+              commitSha = '',
+              ciRunId = '',
+            }) {
+              core.setOutput('eligible', eligible);
+              core.setOutput('reason', reason);
+              core.setOutput('commit_sha', commitSha);
+              core.setOutput('ci_run_id', ciRunId);
+              core.setOutput('issue_number', String(issueNumber));
+            }
+
+            setResult({ reason: 'initial' });
 
             async function addComment(body) {
               await github.rest.issues.createComment({
@@ -55,6 +70,12 @@ jobs:
                 issue_number: issueNumber,
                 body,
               });
+            }
+
+            async function failIntegrity(reason, body, commitSha = '', ciRunId = '') {
+              setResult({ reason, commitSha, ciRunId });
+              await addComment(body);
+              core.setFailed(body);
             }
 
             async function ensureLabel(name, color, description) {
@@ -74,23 +95,30 @@ jobs:
               }
             }
 
+            async function removeLabel(name) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  name,
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+              }
+            }
+
             if (context.payload.issue.pull_request) {
               core.info('Ignoring approval command on pull request conversation.');
+              setResult({ reason: 'pull_request_comment' });
               return;
             }
 
             if (trimmedComment !== '/approve-production') {
               core.info('Ignoring comment because it is not the exact approval command.');
-              return;
-            }
-
-            const approvers = (process.env.FUELABC_AU_PRODUCTION_APPROVERS || '')
-              .split(',')
-              .map((entry) => entry.trim().toLowerCase())
-              .filter(Boolean);
-
-            if (!approvers.includes(actor.toLowerCase())) {
-              await addComment(`Production approval denied for @${actor}.`);
+              setResult({ reason: 'unrelated_comment' });
               return;
             }
 
@@ -102,74 +130,137 @@ jobs:
             const issue = issueResponse.data;
             const issueBody = issue.body || '';
 
-            if (issue.state !== 'open') {
-              await addComment('Production approval failed: approval issue is not open.');
-              core.setFailed('Approval issue is not open.');
-              return;
-            }
-
             if (!issueBody.includes(marker)) {
-              await addComment('Production approval failed: approval metadata marker is missing.');
-              core.setFailed('Approval metadata marker is missing.');
+              core.info('Ignoring approval command on an issue without deployment metadata.');
+              setResult({ reason: 'not_a_deployment_issue' });
               return;
             }
 
             const labels = issue.labels.map((label) => {
               return typeof label === 'string' ? label : label.name;
             });
-            if (!labels.includes('awaiting-approval')) {
-              await addComment('Production approval failed: issue is not awaiting approval.');
-              core.setFailed('Approval issue is not awaiting approval.');
+            const hasAwaitingApproval = labels.includes('awaiting-approval');
+            const hasProcessedLabel = labels.some((label) => processedLabels.includes(label));
+
+            if (!hasAwaitingApproval && hasProcessedLabel) {
+              core.info('Ignoring approval command because deployment issue is already processed.');
+              setResult({ reason: 'already_processed' });
+              return;
+            }
+
+            if (issue.state !== 'open') {
+              await failIntegrity(
+                'issue_not_open',
+                'Production approval failed: approval issue is not open.'
+              );
+              return;
+            }
+
+            if (!hasAwaitingApproval) {
+              await failIntegrity(
+                'missing_awaiting_approval_label',
+                'Production approval failed: issue is not awaiting approval.'
+              );
               return;
             }
 
             const shaMatches = [...issueBody.matchAll(/^FUELABC_AU_COMMIT_SHA=([0-9a-fA-F]{40})$/gm)];
             const runMatches = [...issueBody.matchAll(/^FUELABC_AU_CI_RUN_ID=([0-9]+)$/gm)];
 
-            if (shaMatches.length !== 1 || runMatches.length !== 1) {
-              await addComment('Production approval failed: approval metadata is invalid.');
-              core.setFailed('Approval metadata is invalid.');
+            if (shaMatches.length !== 1) {
+              await failIntegrity(
+                'invalid_commit_sha_metadata',
+                'Production approval failed: approval commit SHA metadata is invalid.'
+              );
+              return;
+            }
+
+            if (runMatches.length !== 1) {
+              await failIntegrity(
+                'invalid_ci_run_id_metadata',
+                'Production approval failed: approval CI run metadata is invalid.'
+              );
               return;
             }
 
             const commitSha = shaMatches[0][1].toLowerCase();
-            const ciRunId = Number(runMatches[0][1]);
-            core.setOutput('commit_sha', commitSha);
+            const ciRunId = runMatches[0][1];
+            setResult({ reason: 'metadata_validated', commitSha, ciRunId });
 
-            await github.rest.repos.getCommit({
-              owner,
-              repo,
-              ref: commitSha,
-            });
+            const approvers = (process.env.FUELABC_AU_PRODUCTION_APPROVERS || '')
+              .split(',')
+              .map((entry) => entry.trim().toLowerCase())
+              .filter(Boolean);
+
+            if (!approvers.includes(actor.toLowerCase())) {
+              await addComment(`❌ Production approval denied for @${actor}.`);
+              setResult({ reason: 'unauthorized', commitSha, ciRunId });
+              return;
+            }
+
+            try {
+              await github.rest.repos.getCommit({
+                owner,
+                repo,
+                ref: commitSha,
+              });
+            } catch (error) {
+              await failIntegrity(
+                'commit_not_found',
+                'Production approval failed: approved commit does not exist in this repository.',
+                commitSha,
+                ciRunId
+              );
+              return;
+            }
 
             try {
               execFileSync('git', ['merge-base', '--is-ancestor', commitSha, 'HEAD'], {
                 stdio: 'ignore',
               });
             } catch (error) {
-              await addComment('Production approval failed: commit is not reachable from main.');
-              core.setFailed('Commit is not reachable from main.');
+              await failIntegrity(
+                'commit_not_reachable_from_main',
+                'Production approval failed: commit is not reachable from main.',
+                commitSha,
+                ciRunId
+              );
               return;
             }
 
-            const runResponse = await github.rest.actions.getWorkflowRun({
-              owner,
-              repo,
-              run_id: ciRunId,
-            });
-            const run = runResponse.data;
+            let run;
+            try {
+              const runResponse = await github.rest.actions.getWorkflowRun({
+                owner,
+                repo,
+                run_id: Number(ciRunId),
+              });
+              run = runResponse.data;
+            } catch (error) {
+              await failIntegrity(
+                'ci_run_not_found',
+                'Production approval failed: CI workflow run was not found.',
+                commitSha,
+                ciRunId
+              );
+              return;
+            }
 
             const runChecks = [
               run.conclusion === 'success',
-              (run.head_sha || '').toLowerCase() === commitSha,
-              run.head_branch === 'main',
               run.event === 'push',
+              run.head_branch === 'main',
+              (run.head_sha || '').toLowerCase() === commitSha,
               run.name === 'FUELabc AU CI',
             ];
 
             if (!runChecks.every(Boolean)) {
-              await addComment('Production approval failed: CI workflow metadata did not match the approved commit.');
-              core.setFailed('CI workflow metadata did not match the approved commit.');
+              await failIntegrity(
+                'ci_run_metadata_mismatch',
+                'Production approval failed: CI workflow metadata did not match the approved commit.',
+                commitSha,
+                ciRunId
+              );
               return;
             }
 
@@ -189,18 +280,7 @@ jobs:
               'Production deployment failed'
             );
 
-            try {
-              await github.rest.issues.removeLabel({
-                owner,
-                repo,
-                issue_number: issueNumber,
-                name: 'awaiting-approval',
-              });
-            } catch (error) {
-              if (error.status !== 404) {
-                throw error;
-              }
-            }
+            await removeLabel('awaiting-approval');
 
             await github.rest.issues.addLabels({
               owner,
@@ -209,60 +289,59 @@ jobs:
               labels: ['deployment-in-progress'],
             });
 
-            core.setOutput('should_deploy', 'true');
-
-  debug-approval-outputs:
-    needs: validate-approval
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Show approval outputs
-        run: |
-          echo "should_deploy=${{ needs['validate-approval'].outputs.should_deploy }}"
-          echo "commit_sha=${{ needs['validate-approval'].outputs.commit_sha }}"
-          echo "issue_number=${{ needs['validate-approval'].outputs.issue_number }}"
+            setResult({
+              eligible: 'true',
+              reason: 'eligible',
+              commitSha,
+              ciRunId,
+            });
 
   deploy:
-    needs: validate-approval
-    if: ${{ needs['validate-approval'].outputs.should_deploy == 'true' }}
+    needs: inspect-approval
+    if: ${{ needs['inspect-approval'].outputs.eligible == 'true' }}
     runs-on: ubuntu-latest
     env:
-      COMMIT_SHA: ${{ needs['validate-approval'].outputs.commit_sha }}
-      ISSUE_NUMBER: ${{ needs['validate-approval'].outputs.issue_number }}
+      COMMIT_SHA: ${{ needs['inspect-approval'].outputs.commit_sha }}
+      ISSUE_NUMBER: ${{ needs['inspect-approval'].outputs.issue_number }}
       ACTIONS_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
     steps:
       - name: Configure SSH
         env:
-          PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+          DEPLOY_SSH_KEY: ${{ secrets.FUELABC_AU_DEPLOY_SSH_KEY }}
+          DEPLOY_HOST_KEY: ${{ secrets.FUELABC_AU_SSH_HOST_KEY }}
         run: |
           set -euo pipefail
-          : "${PROD_SSH_KEY:?PROD_SSH_KEY is required}"
+          : "${DEPLOY_SSH_KEY:?FUELABC_AU_DEPLOY_SSH_KEY is required}"
+          : "${DEPLOY_HOST_KEY:?FUELABC_AU_SSH_HOST_KEY is required}"
           mkdir -p "$HOME/.ssh"
           chmod 700 "$HOME/.ssh"
-          printf '%s\n' "$PROD_SSH_KEY" > "$HOME/.ssh/fuelabc_au_deploy_key"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$HOME/.ssh/fuelabc_au_deploy_key"
+          printf '%s\n' "$DEPLOY_HOST_KEY" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/fuelabc_au_deploy_key"
+          chmod 600 "$HOME/.ssh/known_hosts"
 
       - name: Deploy approved commit
         id: deploy
         env:
-          PROD_HOST: ${{ secrets.PROD_HOST }}
-          PROD_USER: ${{ secrets.PROD_USER }}
-          PROD_PORT: ${{ secrets.PROD_PORT }}
+          DEPLOY_HOST: ${{ vars.FUELABC_AU_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.FUELABC_AU_DEPLOY_USER }}
+          DEPLOY_PORT: ${{ vars.FUELABC_AU_DEPLOY_PORT }}
         run: |
           set -euo pipefail
-          : "${PROD_HOST:?PROD_HOST is required}"
-          : "${PROD_USER:?PROD_USER is required}"
-          : "${PROD_PORT:?PROD_PORT is required}"
+          : "${COMMIT_SHA:?COMMIT_SHA is required}"
+          : "${DEPLOY_HOST:?FUELABC_AU_DEPLOY_HOST is required}"
+          : "${DEPLOY_USER:?FUELABC_AU_DEPLOY_USER is required}"
+          : "${DEPLOY_PORT:?FUELABC_AU_DEPLOY_PORT is required}"
           set +e
           ssh \
             -i "$HOME/.ssh/fuelabc_au_deploy_key" \
             -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=accept-new \
-            -p "$PROD_PORT" \
-            "$PROD_USER@$PROD_HOST" \
-            -- sudo /usr/local/bin/deploy-fuelabc-au.sh 2>&1 | tee deploy-output.txt
+            -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            -p "$DEPLOY_PORT" \
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            -- sudo /usr/local/sbin/deploy-fuelabc-au "$COMMIT_SHA" 2>&1 | tee deploy-output.txt
           status=${PIPESTATUS[0]}
           echo "exit_code=$status" >> "$GITHUB_OUTPUT"
           exit "$status"

@@ -9,8 +9,8 @@ on:
 
 permissions:
   contents: read
-  issues: write
   actions: read
+  issues: write
 
 jobs:
   request-approval:
@@ -69,7 +69,6 @@ jobs:
               owner,
               repo,
               state: 'all',
-              labels: 'production-deployment',
               per_page: 100,
             });
 
@@ -98,30 +97,31 @@ jobs:
             const basePath = process.env.BASE_PATH || 'not configured';
             const serviceName = process.env.SERVICE_NAME || 'not configured';
             const title = `FUELabc AU Production Deployment Approval - ${shortSha}`;
-            const body = `${marker}
-            FUELABC_AU_COMMIT_SHA=${sha}
-            FUELABC_AU_CI_RUN_ID=${run.id}
-
-            ## FUELabc AU Production Deployment Approval
-
-            Repository: ${owner}/${repo}
-            Branch: ${run.head_branch}
-            Full commit SHA: ${sha}
-            Short SHA: ${shortSha}
-            Commit author/login: ${author}
-            CI status: ${run.conclusion}
-            CI workflow run: ${run.html_url}
-            Production URL: ${productionUrl}
-            Base path: ${basePath}
-            Service name: ${serviceName}
-
-            Commit message:
-            ${safeCommitMessage}
-
-            Comment exactly:
-
-            \`/approve-production\`
-            `;
+            const body = [
+              marker,
+              `FUELABC_AU_COMMIT_SHA=${sha}`,
+              `FUELABC_AU_CI_RUN_ID=${run.id}`,
+              '',
+              '## FUELabc AU Production Deployment Approval',
+              '',
+              `Repository: ${owner}/${repo}`,
+              `Branch: ${run.head_branch}`,
+              `Full commit SHA: ${sha}`,
+              `Short SHA: ${shortSha}`,
+              `Commit author/login: ${author}`,
+              `CI status: ${run.conclusion}`,
+              `CI workflow run: ${run.html_url}`,
+              `Production URL: ${productionUrl}`,
+              `Base path: ${basePath}`,
+              `Service name: ${serviceName}`,
+              '',
+              'Commit message:',
+              safeCommitMessage,
+              '',
+              'Comment exactly:',
+              '',
+              '/approve-production',
+            ].join('\n');
 
             const issue = await github.rest.issues.create({
               owner,
