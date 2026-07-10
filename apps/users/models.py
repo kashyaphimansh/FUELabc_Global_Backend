@@ -103,3 +103,6 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = "phone"
     REQUIRED_FIELDS = []
+
+    def __str__(self):
+        return self.phone or self.email or self.name or f"User {self.pk or 'unsaved'}"
