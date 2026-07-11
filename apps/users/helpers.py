@@ -23,6 +23,7 @@ def build_user_response(user):
             and
             (user.email or "").strip()
         ),
+        "profile_setup_seen": user.profile_setup_seen,
 
         "is_vehicle_setup_done":
             user.is_vehicle_setup_done,

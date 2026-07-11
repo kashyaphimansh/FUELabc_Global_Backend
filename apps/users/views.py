@@ -359,7 +359,8 @@ class CompleteProfileView(APIView):
 
         # Update user
 
-        user.name = name
+        if name:
+            user.name = name
 
         # Email can be set only once
         if not user.email and email:
@@ -369,13 +370,11 @@ class CompleteProfileView(APIView):
         if not user.phone and phone:
             user.phone = phone
 
-        # Profile completion
+        # Profile setup has been shown
+        user.profile_setup_seen = True
 
-        user.profile_completed = bool(
-            user.name and
-            user.email and
-            user.phone
-        )
+        # Profile completion
+        user.profile_completed = bool(name)
 
         user.save()
 

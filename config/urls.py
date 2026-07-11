@@ -25,11 +25,6 @@ urlpatterns = [
     ),
 
     path(
-        "api/v1/",
-        include("apps.vehicles.urls"),
-    ),
-
-    path(
         "api/v1/aem/",
         include("apps.aem.urls"),
     ),
@@ -55,5 +50,8 @@ urlpatterns = [
 
     path("api/v1/mileage-advisor/",
           include("apps.mileage_advisor.urls")),
+    
+    path("api/v1/notifications/",
+          include("apps.notifications.urls")),
 
 ]
