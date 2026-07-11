@@ -54,6 +54,9 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         default="",
     )
+    profile_setup_seen = models.BooleanField(
+        default=False
+    )
 
     login_provider = models.CharField(
         max_length=20,

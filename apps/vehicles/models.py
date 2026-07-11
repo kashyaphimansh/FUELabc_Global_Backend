@@ -35,6 +35,12 @@ class Vehicle(models.Model):
         decimal_places=2
     )
 
+    battery_capacity = models.FloatField(
+        null=True,
+        blank=True,
+        help_text="Battery capacity in kWh (Only for EV)"
+    )
+
     average_mileage = models.FloatField()
 
     average_speed = models.IntegerField()
