@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.utils import timezone
+
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
@@ -102,6 +104,36 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
 
+    preferred_distance_unit = models.CharField(
+        max_length=20,
+        blank=True,
+        default=""
+    )
+
+    preferred_fuel_volume_unit = models.CharField(
+        max_length=20,
+        blank=True,
+        default=""
+    )
+
+    preferred_fuel_economy_unit = models.CharField(
+        max_length=20,
+        blank=True,
+        default=""
+    )
+
+    preferred_ev_price_unit = models.CharField(
+        max_length=20,
+        blank=True,
+        default=""
+    )
+
+    preferred_ev_efficiency_unit = models.CharField(
+        max_length=20,
+        blank=True,
+        default=""
+    )
+
     objects = UserManager()
 
     USERNAME_FIELD = "phone"
@@ -109,3 +141,13 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.phone or self.email or self.name or f"User {self.pk or 'unsaved'}"
+
+
+class EmailOTP(models.Model):
+    email = models.EmailField(unique=True)
+    otp = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.email
