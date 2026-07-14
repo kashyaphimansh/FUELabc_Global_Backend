@@ -1,0 +1,142 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+
+<h1>Send Notification</h1>
+
+<form method="post">
+
+{% csrf_token %}
+
+<p>
+
+Title
+
+<input
+type="text"
+name="title"
+required>
+
+</p>
+
+<p>
+
+Body
+
+<textarea
+name="body"
+required>
+
+</textarea>
+
+</p>
+
+<p>
+
+Send To
+
+<select name="send_to">
+
+<option value="all">
+
+All Users
+
+</option>
+
+<option value="single">
+
+Single User
+
+</option>
+
+</select>
+
+</p>
+
+<p>
+
+User
+
+<select name="user">
+
+{% for user in users %}
+
+<option value="{{ user.id }}">
+
+{{ user.email }}
+
+</option>
+
+{% endfor %}
+
+</select>
+
+</p>
+
+<p>
+
+Type
+
+<select name="type">
+
+<option value="push">
+
+Push
+
+</option>
+
+<option value="in_app">
+
+In App
+
+</option>
+
+</select>
+
+</p>
+
+<p>
+
+Priority
+
+<select name="priority">
+
+<option value="low">
+
+Low
+
+</option>
+
+<option value="medium">
+
+Medium
+
+</option>
+
+<option value="high">
+
+High
+
+</option>
+
+</select>
+
+</p>
+
+<p>
+
+Category
+
+<input
+type="text"
+name="category">
+
+</p>
+
+<input
+type="submit"
+value="Send">
+
+</form>
+
+{% endblock %}

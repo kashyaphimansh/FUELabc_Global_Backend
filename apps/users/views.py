@@ -4,6 +4,10 @@ from .services import *
 from core.responses import APIResponse
 from rest_framework.permissions import IsAuthenticated
 from .helpers import build_user_response
+from .models import EmailOTP
+from django.utils import timezone
+from datetime import timedelta
+from .serializers import UserSettingsSerializer
 
 class SendPhoneOTPView(
     APIView
@@ -129,6 +133,7 @@ class SendEmailOTPView(APIView):
             message="OTP sent"
         )
 
+
 class VerifyEmailOTPView(APIView):
 
     permission_classes = []
@@ -146,10 +151,24 @@ class VerifyEmailOTPView(APIView):
         email = serializer.validated_data["email"].lower().strip()
         otp = serializer.validated_data["otp"]
 
-        if otp != "123456":
+        email_otp = EmailOTP.objects.filter(
+            email=email,
+            otp=otp,
+            is_used=False
+        ).first()
+
+        if not email_otp:
             return APIResponse.error(
                 message="Invalid OTP"
             )
+
+        if email_otp.created_at < timezone.now() - timedelta(minutes=5):
+            return APIResponse.error(
+                message="OTP expired"
+            )
+
+        email_otp.is_used = True
+        email_otp.save(update_fields=["is_used"])
 
         user = User.objects.filter(
             email=email
@@ -172,10 +191,11 @@ class VerifyEmailOTPView(APIView):
         return APIResponse.success(
             data={
                 "user": build_user_response(user),
-
                 **tokens,
             }
         )
+
+
 
 class SocialLoginView(
     APIView
@@ -419,4 +439,66 @@ class DeleteAccountView(APIView):
 
         return APIResponse.success(
             message="Account deleted successfully"
+        )
+
+
+class UserSettingsView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+
+        user = request.user
+
+        return APIResponse.success(
+            data={
+                "distance_unit": user.preferred_distance_unit,
+                "fuel_volume_unit": user.preferred_fuel_volume_unit,
+                "fuel_economy_unit": user.preferred_fuel_economy_unit,
+                "ev_price_unit": user.preferred_ev_price_unit,
+                "ev_efficiency_unit": user.preferred_ev_efficiency_unit,
+            }
+        )
+
+    def put(self, request):
+
+        serializer = UserSettingsSerializer(
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        user = request.user
+
+        data = serializer.validated_data
+
+        if "distance_unit" in data:
+            user.preferred_distance_unit = data["distance_unit"]
+
+        if "fuel_volume_unit" in data:
+            user.preferred_fuel_volume_unit = data["fuel_volume_unit"]
+
+        if "fuel_economy_unit" in data:
+            user.preferred_fuel_economy_unit = data["fuel_economy_unit"]
+
+        if "ev_price_unit" in data:
+            user.preferred_ev_price_unit = data["ev_price_unit"]
+
+        if "ev_efficiency_unit" in data:
+            user.preferred_ev_efficiency_unit = data["ev_efficiency_unit"]
+
+        user.save()
+
+        return APIResponse.success(
+            message="Settings updated successfully",
+            data={
+                "distance_unit": user.preferred_distance_unit,
+                "fuel_volume_unit": user.preferred_fuel_volume_unit,
+                "fuel_economy_unit": user.preferred_fuel_economy_unit,
+                "ev_price_unit": user.preferred_ev_price_unit,
+                "ev_efficiency_unit": user.preferred_ev_efficiency_unit,
+            }
         )

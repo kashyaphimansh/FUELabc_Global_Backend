@@ -13,7 +13,8 @@ from .views import (
     VerifyPhoneVerificationView,
     SendEmailVerificationView,
     VerifyEmailVerificationView,
-    LogoutView
+    LogoutView, 
+    UserSettingsView
 )
 
 urlpatterns = [
@@ -77,4 +78,8 @@ urlpatterns = [
         'delete-account/',
         DeleteAccountView.as_view(),
     ),
+    
+    path('user-settings/',
+        UserSettingsView.as_view(),
+    )
 ]

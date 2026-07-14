@@ -45,7 +45,11 @@ class Vehicle(models.Model):
 
     average_speed = models.IntegerField()
 
-    yearly_km = models.IntegerField()
+    yearly_km = models.IntegerField(
+        null=True,
+        blank=True,
+        default=0,
+    )
 
     driving_style = models.CharField(
         max_length=50,
