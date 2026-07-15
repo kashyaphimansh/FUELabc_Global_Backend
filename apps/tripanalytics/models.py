@@ -46,10 +46,10 @@ class Trip(models.Model):
     distance = models.FloatField(default=0.0)
 
     average_mileage = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        null=True,
-        blank=True,
+    max_digits=10,
+    decimal_places=2,
+    null=True,
+    blank=True,
     )
 
     co2_emission = models.DecimalField(
@@ -57,6 +57,14 @@ class Trip(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
+    )
+
+    co2_saved = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Positive = CO2 saved, Negative = Extra CO2 emitted",
     )
 
     start_location  = models.CharField(max_length=500, blank=True, default="")
