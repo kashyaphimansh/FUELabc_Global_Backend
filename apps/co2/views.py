@@ -135,6 +135,8 @@ class CO2TrackingView(APIView):
             return start, start + timedelta(days=6)
         elif period_type == "this_month":
             return today.replace(day=1), today
+        elif period_type == "last_30_days":
+            return today - timedelta(days=29), today
         elif period_type == "all_time":
             return today - timedelta(days=3650), today
         elif period_type == "custom" and start_date and end_date:
@@ -166,6 +168,13 @@ class CO2TrackingView(APIView):
 
     # ----------------------------------------------------------
     # Summary
+    #
+    # NOTE: The `Trip` model currently only stores `co2_emission`.
+    # There is no `co2_saved` field on the model, so we use
+    # getattr(..., None) to safely handle its absence instead of
+    # crashing with AttributeError. If/when a real `co2_saved`
+    # field or calculation is added to Trip, this will pick it
+    # up automatically without further changes here.
     # ----------------------------------------------------------
 
     def _calculate_summary(self, current_trips, previous_trips):
@@ -173,25 +182,27 @@ class CO2TrackingView(APIView):
         current_emitted  = 0.0
 
         for trip in current_trips:
-            if trip.co2_saved is not None:
-                if trip.co2_saved > 0:
-                    current_saved   += trip.co2_saved
+            co2_saved = getattr(trip, "co2_saved", None)
+            if co2_saved is not None:
+                if co2_saved > 0:
+                    current_saved   += float(co2_saved)
                 else:
-                    current_emitted += abs(trip.co2_saved)
+                    current_emitted += abs(float(co2_saved))
             elif trip.co2_emission is not None:
-                current_emitted += trip.co2_emission
+                current_emitted += float(trip.co2_emission)
 
         prev_saved   = 0.0
         prev_emitted = 0.0
 
         for trip in previous_trips:
-            if trip.co2_saved is not None:
-                if trip.co2_saved > 0:
-                    prev_saved   += trip.co2_saved
+            co2_saved = getattr(trip, "co2_saved", None)
+            if co2_saved is not None:
+                if co2_saved > 0:
+                    prev_saved   += float(co2_saved)
                 else:
-                    prev_emitted += abs(trip.co2_saved)
+                    prev_emitted += abs(float(co2_saved))
             elif trip.co2_emission is not None:
-                prev_emitted += trip.co2_emission
+                prev_emitted += float(trip.co2_emission)
 
         saved_g    = round(current_saved)
         emitted_g  = round(current_emitted)
@@ -285,19 +296,21 @@ class CO2TrackingView(APIView):
         trip_data = []
         for trip in paginated:
 
-            if trip.co2_saved is not None:
-                co2_g = abs(round(trip.co2_saved))
-                if trip.co2_saved > 0:
+            co2_saved = getattr(trip, "co2_saved", None)
+
+            if co2_saved is not None:
+                co2_g = abs(round(float(co2_saved)))
+                if co2_saved > 0:
                     status_val = "saved"
                     msg        = f"Nice! You saved {co2_g} g CO2"
-                elif trip.co2_saved == 0:
+                elif co2_saved == 0:
                     status_val = "neutral"
                     msg        = "No CO2 savings for this trip"
                 else:
                     status_val = "emitted"
                     msg        = f"Emitted {co2_g} g CO2"
             elif trip.co2_emission is not None:
-                co2_g      = round(trip.co2_emission)
+                co2_g      = round(float(trip.co2_emission))
                 status_val = "emitted"
                 msg        = f"Trip emitted {co2_g} g CO2"
             else:
@@ -328,6 +341,7 @@ class CO2TrackingView(APIView):
 
             trip_data.append({
                 "trip_id":   f"trip_{trip.id}",
+                "id":        trip.id,
                 "status":    status_val,
                 # CO2
                 "co2_g":     co2_g,

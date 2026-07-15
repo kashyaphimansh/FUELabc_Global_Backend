@@ -77,19 +77,25 @@ class TripSaveView(APIView):
     def post(self, request):
         try:
             trip = Trip.objects.create(
-                user=request.user,
-                vehicle_id=request.data.get("vehicle_id"),
-                start_time=parse_datetime(request.data.get("start_time", "")),
-                end_time=parse_datetime(request.data.get("end_time", "")),
-                distance=request.data.get("distance_km", 0.0),
-                start_location=request.data.get("start_location", ""),
-                destination=request.data.get("destination", ""),
-                country_code=request.data.get("country_code", "IN"),
-                average_mileage=request.data.get("average_mileage"),
-                co2_emission=request.data.get("co2_emission"),
+            user=request.user,
+            vehicle_id=request.data.get("vehicle_id"),
+            start_time=parse_datetime(request.data.get("start_time", "")),
+            end_time=parse_datetime(request.data.get("end_time", "")),
+            distance=request.data.get("distance_km", 0.0),
 
-                is_ended=True,
-            )
+            start_location=request.data.get("start_location", ""),
+            destination=request.data.get("destination", ""),
+
+            country_code=request.data.get("country_code", "IN"),
+
+            average_mileage=request.data.get("average_mileage"),
+
+            co2_emission=request.data.get("co2_emission"),
+
+            co2_saved=request.data.get("co2_saved"),
+
+            is_ended=True,
+        )
             # Speed samples save karo
             for sample in request.data.get("speed_samples", []):
                 TripData.objects.create(

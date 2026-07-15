@@ -50,6 +50,7 @@ class TripHistorySerializer(serializers.ModelSerializer):
     average_mileage = serializers.SerializerMethodField()
     country_code    = serializers.SerializerMethodField()
     co2_emission    = serializers.SerializerMethodField()
+    co2_saved       = serializers.SerializerMethodField()
     start_location  = serializers.CharField(read_only=True)
     destination     = serializers.CharField(read_only=True)
     is_ended        = serializers.BooleanField(read_only=True)
@@ -161,6 +162,11 @@ class TripHistorySerializer(serializers.ModelSerializer):
         if obj.co2_emission is None:
             return None
         return round(float(obj.co2_emission), 2)
+    
+    def get_co2_saved(self, obj):
+        if obj.co2_saved is None:
+            return None
+        return round(float(obj.co2_saved), 2)
 
     class Meta:
         model = Trip
@@ -182,4 +188,5 @@ class TripHistorySerializer(serializers.ModelSerializer):
             "is_ended",
             "trip_type",
             "country_code",
+            "co2_saved",
         ]
