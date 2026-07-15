@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils.dateparse import parse_datetime
 
-from .models import Trip
+from .models import Trip, TripData
 from .serializers import TripHistorySerializer
 
 logger = logging.getLogger(__name__)
@@ -86,6 +86,8 @@ class TripSaveView(APIView):
                 destination=request.data.get("destination", ""),
                 country_code=request.data.get("country_code", "IN"),
                 average_mileage=request.data.get("average_mileage"),
+                co2_emission=request.data.get("co2_emission"),
+
                 is_ended=True,
             )
             # Speed samples save karo
