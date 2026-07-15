@@ -1,45 +1,55 @@
 import random
-from google.oauth2 import id_token
-from google.auth.transport import requests
-from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User
-from django.utils import timezone
 import uuid
+
+from django.conf import settings
+from django.core.mail import send_mail
+from django.utils import timezone
+
+from google.auth.transport import requests
+from google.oauth2 import id_token
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from .models import User, EmailOTP
 
 class OTPService:
 
     @staticmethod
-    def generate_otp():
+    def send_email_otp(email):
 
-        return str(
-            random.randint(
-                100000,
-                999999,
-            )
+        otp = str(random.randint(100000, 999999))
+        
+        EmailOTP.objects.filter(email=email).delete()
+
+        EmailOTP.objects.update_or_create(
+            email=email,
+            defaults={
+                "otp": otp,
+                "is_used": False,
+            }
         )
 
-    @staticmethod
-    def send_phone_otp(
-        phone,
-    ):
+        send_mail(
+            subject="Your FUELabc Login Verification Code",
+            message=f"""Hello,
 
-        otp = OTPService.generate_otp()
+                    We received a request to sign in to your FUELabc account.
 
-        print(otp)
+                    Your One-Time Password (OTP) is:
 
-        return otp
+                    {otp}
 
-    @staticmethod
-    def send_email_otp(
-        email,
-    ):
+                    This OTP is valid for 5 minutes and can only be used once.
 
-        otp = OTPService.generate_otp()
+                    If you did not request this code, you can safely ignore this email.
 
-        print(otp)
+                    Thank you,
 
-        return otp
-
+                    The FUELabc Team
+                    """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
 
 class AuthService:
 

@@ -111,84 +111,160 @@ class TermsAPIView(APIView):
             "title": "Terms & Conditions",
             "last_updated": "July 2026",
             "content": """
-    ```
+# Terms & Conditions
 
-    TERMS & CONDITIONS
+**Last Updated:** July 2026
 
-    Last Updated: July 2026
+Welcome to **FUELabc**.
 
-    Welcome to FUELabc. By downloading, installing, accessing, or using the FUELabc application ("App"), you agree to be bound by these Terms & Conditions.
+These Terms & Conditions ("Terms") govern your access to and use of the FUELabc mobile application ("App"). By downloading, installing, or using the App, you agree to these Terms.
 
-    1. ABOUT FUELABC
+---
 
-    FUELabc is developed and operated by Saint Sita Ram Innovation Lab Private Limited ("Company", "we", "our", or "us").
+## 1. About FUELabc
 
-    The App provides fuel cost estimation, mileage optimization assistance, route-related calculations, vehicle information management, and related services.
+FUELabc is owned and operated by **Saint Sita Ram Innovation Lab Private Limited**.
 
-    2. ELIGIBILITY
+The App provides features including:
 
-    You must be at least 18 years of age or have the consent of a parent or legal guardian to use the App.
+- Fuel cost estimation
+- Mileage calculations
+- EV charging cost estimation
+- Vehicle management
+- Trip and route calculations
+- Fuel price comparison
+- Related vehicle utilities
 
-    3. SUBSCRIPTION & PURCHASES
+---
 
-    Premium Access – ₹149 (One-Time Purchase for 1 Year)
+## 2. Eligibility
 
-    This purchase does not automatically renew unless expressly stated at the time of purchase.
+You must be at least **18 years old**, or have permission from a parent or legal guardian to use the App.
 
-    4. MILEAGE & FUEL INFORMATION DISCLAIMER
+---
 
-    Mileage estimates, fuel consumption calculations, route costs, fuel price comparisons, and related information are provided for informational purposes only.
+## 3. User Account
 
-    Actual results may vary based on:
-    • Vehicle condition
-    • Driving habits
-    • Traffic conditions
-    • Weather conditions
-    • Road conditions
-    • Fuel quality
-    • Vehicle load and maintenance
+You are responsible for:
 
-    FUELabc does not guarantee the accuracy of any estimate or calculation.
+- Keeping your account secure
+- Providing accurate information
+- Maintaining your login credentials
 
-    5. SAFE USE
+You must immediately notify us of any unauthorized access.
 
-    You must comply with all traffic laws, vehicle regulations, and manufacturer recommendations while using the App.
+---
 
-    Do not use the App in a manner that distracts you from safe driving.
+## 4. Subscription & Purchases
 
-    You are solely responsible for your driving decisions and vehicle operation.
+Some features require a paid subscription or one-time purchase.
 
-    6. INTELLECTUAL PROPERTY
+Unless otherwise stated:
 
-    FUELabc, its software, algorithms, content, designs, trademarks, patents, databases, and related intellectual property are owned by Saint Sita Ram Innovation Lab Private Limited.
+- Prices are displayed within the App.
+- Payments are processed through authorized payment providers.
+- Refunds are subject to Google Play Store, Apple App Store, or applicable consumer laws.
 
-    7. REFUND POLICY
+---
 
-    Refund requests may be reviewed subject to applicable laws and verification of the circumstances.
+## 5. Fuel Prices & Mileage Disclaimer
 
-    8. LIMITATION OF LIABILITY
+FUELabc provides estimated calculations only.
 
-    To the maximum extent permitted by law, FUELabc shall not be liable for indirect or consequential damages arising from use of the App.
+Actual fuel costs, mileage, EV efficiency, and travel expenses may vary depending on:
 
-    9. PRIVACY
+- Driving style
+- Traffic
+- Weather
+- Road conditions
+- Vehicle maintenance
+- Vehicle load
+- Fuel quality
+- Battery condition (EV)
 
-    Your use of the App is also governed by our Privacy Policy.
+We do not guarantee the accuracy of any estimate.
 
-    10. GOVERNING LAW
+---
 
-    These Terms are governed by the laws of India.
+## 6. Safe Driving
 
-    11. CONTACT US
+Never operate the App in a way that distracts you while driving.
 
-    Saint Sita Ram Innovation Lab Private Limited
-    Bathinda, Punjab, India
+You are solely responsible for complying with all road rules and traffic laws applicable in your country.
 
-    Email: [support@fuelabc.com](mailto:support@fuelabc.com)
+---
 
-    Websites:
-    [www.fuelabc.com](http://www.fuelabc.com)
-    [www.ssrinnovationlab.com](http://www.ssrinnovationlab.com)
-    """
+## 7. Intellectual Property
+
+All content, software, algorithms, trademarks, logos, graphics, and intellectual property within FUELabc remain the exclusive property of Saint Sita Ram Innovation Lab Private Limited.
+
+No part of the App may be copied, modified, reverse engineered, distributed, or commercially exploited without written permission.
+
+---
+
+## 8. Limitation of Liability
+
+To the maximum extent permitted by law, FUELabc is not liable for:
+
+- Indirect damages
+- Loss of profits
+- Loss of data
+- Vehicle damage
+- Fuel expenses
+- Travel costs
+- Business interruption
+
+Use of the App is entirely at your own risk.
+
+---
+
+## 9. Third-Party Services
+
+The App may integrate with third-party services including:
+
+- Google Maps
+- Payment providers
+- Analytics providers
+- Cloud services
+
+These services have their own privacy policies and terms.
+
+---
+
+## 10. Privacy
+
+Your use of the App is also governed by our Privacy Policy.
+
+---
+
+## 11. Changes to these Terms
+
+We may update these Terms from time to time.
+
+Continued use of the App after updates means you accept the revised Terms.
+
+---
+
+## 12. Governing Law
+
+If you use the App in Australia or New Zealand, these Terms are subject to applicable consumer protection and privacy laws in your jurisdiction.
+
+Other users remain subject to the laws applicable in their country where required.
+
+---
+
+## 13. Contact Us
+
+**Saint Sita Ram Innovation Lab Private Limited**
+
+Bathinda, Punjab, India
+
+Email: [support@fuelabc.com](mailto:support@fuelabc.com)
+
+Websites:
+[www.fuelabc.com](http://www.fuelabc.com)
+[www.ssrinnovationlab.com](http://www.ssrinnovationlab.com)
+"""
     })
 
 class PrivacyPolicyAPIView(APIView):
@@ -198,163 +274,215 @@ class PrivacyPolicyAPIView(APIView):
             "title": "Privacy Policy",
             "last_updated": "July 2026",
             "content": """
+# Privacy Policy
 
-    PRIVACY POLICY
+**Last Updated:** July 2026
 
-    Last Updated: July 2026
+FUELabc ("we", "our", or "us") respects your privacy.
 
-    Saint Sita Ram Innovation Lab Private Limited ("Company", "we", "our", or "us") operates the FUELabc mobile application ("App").
+This Privacy Policy explains how we collect, use, store, and protect your personal information.
 
-    This Privacy Policy explains how we collect, use, store, process, and protect your personal information when you use FUELabc.
+---
 
-    INFORMATION WE COLLECT
+## Information We Collect
 
-    We may collect the following information:
+Depending on how you use the App, we may collect:
 
-    • Username
-    • Mobile Number
-    • Email Address (Optional)
-    • Device Identifier
-    • State and District
-    • Vehicle Information
-    • App Usage Information
-    • Location Information (with your permission)
+- Name
+- Mobile number
+- Email address
+- Country
+- State
+- City
+- Device information
+- Vehicle information
+- Usage analytics
+- Location (only with your permission)
 
-    LOCATION DATA
+---
 
-    FUELabc may collect your device location when permission is granted.
+## Location Information
 
-    Location data is used for:
+If permission is granted, we may access your device location for:
 
-    • Route calculations
-    • Journey starting points
-    • Map display features
-    • Mileage and fuel optimization features
+- Navigation
+- Route calculations
+- Fuel cost estimation
+- Nearby fuel stations
+- Trip management
 
-    Location access can be disabled through your device settings, although some features may not function correctly.
+You may disable location access at any time through your device settings.
 
-    VEHICLE INFORMATION
+---
 
-    We may collect vehicle-related information including:
+## Vehicle Information
 
-    • Vehicle Type
-    • Manufacturer
-    • Model
-    • Engine Capacity (CC)
-    • Fuel Type
+We may collect:
 
-    This information is used to improve mileage calculations, route costs, and fuel estimations.
+- Vehicle type
+- Manufacturer
+- Model
+- Fuel type
+- Engine capacity
+- EV battery information (where applicable)
 
-    HOW WE USE YOUR INFORMATION
+This information helps improve mileage and fuel cost calculations.
 
-    We use your information to:
+---
 
-    • Provide App functionality
-    • Verify user accounts
-    • Send OTP verification messages
-    • Improve App performance
-    • Calculate mileage and fuel costs
-    • Maintain account security
-    • Provide customer support
-    • Send important service notifications
+## How We Use Your Information
 
-    PAYMENT PROCESSING
+We use your information to:
 
-    Payments may be processed through trusted third-party payment providers such as Razorpay.
+- Create and manage your account
+- Verify your identity
+- Improve App functionality
+- Calculate fuel costs
+- Calculate EV charging costs
+- Improve mileage estimates
+- Respond to support requests
+- Detect fraud
+- Send important service notifications
 
-    We do not store your complete payment card details on our servers.
+---
 
-    ANALYTICS AND CRASH REPORTING
+## Payments
 
-    We may use analytics services to understand App performance, usage trends, and technical issues.
+Payments may be processed through trusted third-party payment providers.
 
-    Collected analytics information is used solely to improve our services.
+We do not store your complete debit or credit card details.
 
-    DATA SHARING
+---
 
-    We do not sell personal information.
+## Analytics
 
-    Information may be shared only:
+We may use trusted analytics providers to:
 
-    • With payment providers for transaction processing
-    • With service providers supporting App operations
-    • When required by law
-    • To protect legal rights and security
+- Monitor crashes
+- Improve performance
+- Understand feature usage
+- Enhance user experience
 
-    DATA RETENTION
+Analytics data is generally aggregated and anonymized where practical.
 
-    We retain information only for as long as necessary to:
+---
 
-    • Provide our services
-    • Comply with legal obligations
-    • Resolve disputes
-    • Enforce agreements
+## Information Sharing
 
-    ACCOUNT DELETION
+We do **not sell** your personal information.
 
-    Users may request account deletion directly through the App.
+We may share information only with:
 
-    Upon successful verification, personal information associated with the account will be permanently removed unless retention is required by law.
+- Payment providers
+- Cloud service providers
+- Analytics providers
+- Legal authorities where required by law
 
-    YOUR RIGHTS
+---
 
-    Depending on your jurisdiction, you may have the right to:
+## Data Security
 
-    • Access your personal data
-    • Correct inaccurate information
-    • Request deletion of data
-    • Withdraw consent
-    • Request data portability
-    • Object to certain processing activities
+We implement reasonable administrative, technical, and physical safeguards to protect your information.
 
-    Requests may be submitted through support@fuelabc.com.
+However, no online service can guarantee complete security.
 
-    DATA SECURITY
+---
 
-    We implement reasonable technical and organizational measures to protect user information.
+## Data Retention
 
-    Despite these safeguards, no electronic transmission or storage system can be guaranteed to be completely secure.
+We retain personal information only as long as necessary to:
 
-    CHILDREN'S PRIVACY
+- Provide our services
+- Meet legal obligations
+- Resolve disputes
+- Enforce agreements
 
-    The App is not intended for children under the age of 13.
+---
 
-    We do not knowingly collect personal information from children under 13 years of age.
+## Your Rights
 
-    INTERNATIONAL USERS
+Depending on your location, you may have rights to:
 
-    If you access the App from outside India, your information may be transferred to and processed in India where our systems and service providers operate.
+- Access your personal information
+- Correct inaccurate information
+- Request deletion
+- Withdraw consent
+- Request data portability
+- Object to certain processing
 
-    By using the App, you consent to such transfers where permitted by applicable law.
+Requests can be sent to:
 
-    INTELLECTUAL PROPERTY
+**support@fuelabc.com**
 
-    FUELabc, its software, algorithms, technologies, patents, copyrights, trademarks, and related intellectual property are owned by Saint Sita Ram Innovation Lab Private Limited.
+---
 
-    Unauthorized copying, modification, reverse engineering, distribution, or commercial use is prohibited.
+## Australia
 
-    CHANGES TO THIS PRIVACY POLICY
+If you are located in Australia, we handle personal information in accordance with the **Privacy Act 1988 (Cth)** and the **Australian Privacy Principles (APPs)**.
 
-    We may update this Privacy Policy from time to time.
+---
 
-    Updated versions will be posted within the App and become effective upon publication.
+## New Zealand
 
-    CONTACT US
+If you are located in New Zealand, personal information is handled in accordance with the **Privacy Act 2020 (NZ)**.
 
-    Saint Sita Ram Innovation Lab Private Limited
+---
 
-    Bathinda, Punjab, India
+## Children's Privacy
 
-    Email: support@fuelabc.com
+FUELabc is not intended for children under 13 years of age.
 
-    Websites:
-    www.fuelabc.com
-    www.ssrinnovationlab.com
-    """
+We do not knowingly collect personal information from children.
+
+---
+
+## International Data Transfers
+
+Your information may be stored and processed on servers located in different countries where our service providers operate.
+
+By using the App, you consent to such transfers where permitted by applicable law.
+
+---
+
+## Changes to this Privacy Policy
+
+We may update this Privacy Policy from time to time.
+
+The latest version will always be available within the App.
+
+---
+
+## Contact Us
+
+**Saint Sita Ram Innovation Lab Private Limited**
+
+Bathinda, Punjab, India
+
+Email: support@fuelabc.com
+
+Websites:
+www.fuelabc.com
+www.ssrinnovationlab.com
+"""
     })
 
 class CustomerSupportView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        tickets = CustomerSupport.objects.filter(
+            user=request.user
+        ).order_by("-created_at")
+
+        serializer = CustomerSupportSerializer(
+            tickets,
+            many=True,
+        )
+
+        return Response({
+            "success": True,
+            "data": serializer.data,
+        })
 
     def post(self, request):
         serializer = CustomerSupportSerializer(data=request.data)

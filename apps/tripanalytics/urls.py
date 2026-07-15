@@ -1,7 +1,3 @@
-"""
-Trip Analytics URLs
-"""
-
 from django.urls import path
 from .views import TripHistoryView, TripSaveView
 
@@ -11,11 +7,10 @@ urlpatterns = [
     path(
         "history/",
         TripHistoryView.as_view(),
-        name="trip-history",
     ),
+
     path(
         "save/",
         TripSaveView.as_view(),
-        name="trip-save",
     ),
 ]
