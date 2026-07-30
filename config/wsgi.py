@@ -8,3 +8,6 @@ os.environ.setdefault(
 )
 
 application = get_wsgi_application()
+
+# Firebase initialize
+import core.firebase

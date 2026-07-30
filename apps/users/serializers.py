@@ -1,5 +1,8 @@
 from rest_framework import serializers
 
+class SaveFCMTokenSerializer(serializers.Serializer):
+    fcm_token = serializers.CharField()
+
 class SendPhoneOTPSerializer(
     serializers.Serializer
 ):
