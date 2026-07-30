@@ -127,15 +127,24 @@ class TripSaveView(APIView):
             # ---------------------------------
             # CO2 Calculation
             # ---------------------------------
-            actual_emission = calculate_co2_emission(
+            # calculate_co2_emission returns a RATE in g/km.
+            # Must multiply by actual trip distance to get the real
+            # total emission for THIS trip (not a static/per-km value).
+            emission_rate_gkm = calculate_co2_emission(
                 average_mileage,
                 fuel_type,
+            )
+
+            actual_emission = (
+                round(emission_rate_gkm * distance, 2)
+                if emission_rate_gkm is not None
+                else None
             )
 
             BASELINE_EMISSION = 192
 
             co2_saved = calculate_co2_saved(
-                actual_emission,
+                emission_rate_gkm,
                 BASELINE_EMISSION,
                 distance,
             )

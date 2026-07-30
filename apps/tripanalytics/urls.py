@@ -6,8 +6,9 @@ app_name = "tripanalytics"
 urlpatterns = [
     path(
         "history/",
-        TripHistoryView.as_view(),
+        TripHistoryView.as_view(),  
     ),
+
 
     path(
         "save/",
