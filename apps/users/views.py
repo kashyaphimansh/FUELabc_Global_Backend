@@ -9,6 +9,30 @@ from django.utils import timezone
 from datetime import timedelta
 from .serializers import UserSettingsSerializer
 
+class SaveFCMTokenView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        serializer = SaveFCMTokenSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        request.user.fcm_token = serializer.validated_data["fcm_token"]
+
+        request.user.save(
+            update_fields=["fcm_token"]
+        )
+
+        return APIResponse.success(
+            message="FCM token saved successfully"
+        )
+
 class SendPhoneOTPView(
     APIView
 ):
@@ -407,19 +431,19 @@ class CompleteProfileView(APIView):
 
 class LogoutView(APIView):
 
-    permission_classes = [
-        IsAuthenticated
-    ]
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
 
         user = request.user
 
         user.current_session_id = None
+        user.fcm_token = None
 
         user.save(
             update_fields=[
-                "current_session_id"
+                "current_session_id",
+                "fcm_token",
             ]
         )
 

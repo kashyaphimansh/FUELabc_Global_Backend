@@ -56,6 +56,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         default="",
     )
+    fcm_token = models.TextField(
+        null=True,
+        blank=True
+    )
+
     profile_setup_seen = models.BooleanField(
         default=False
     )

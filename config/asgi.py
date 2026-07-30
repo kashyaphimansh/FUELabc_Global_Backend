@@ -8,3 +8,6 @@ os.environ.setdefault(
 )
 
 application = get_asgi_application()
+
+# Firebase initialize
+import core.firebase

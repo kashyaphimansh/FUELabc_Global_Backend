@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
+    SaveFCMTokenView,
     SendPhoneOTPView,
     VerifyPhoneOTPView,
     SocialLoginView,
@@ -18,6 +19,10 @@ from .views import (
 )
 
 urlpatterns = [
+    path(
+        "save-fcm-token/",
+        SaveFCMTokenView.as_view(),
+    ),
 
     path(
         'send-phone-otp/',
